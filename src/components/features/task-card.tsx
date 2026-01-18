@@ -43,6 +43,17 @@ const effortIcons: Record<Effort, { icon: typeof Zap; count: number }> = {
   EXTREME: { icon: Zap, count: 5 },
 }
 
+// Safely parse location - handles both JSON objects and plain text
+function parseLocation(location: string): string {
+  try {
+    const parsed = JSON.parse(location)
+    return parsed.formatted?.split(',')[0] || parsed.name || location
+  } catch {
+    // If JSON parsing fails, treat it as plain text
+    return location
+  }
+}
+
 export function TaskCard({
   task,
   onStatusChange,
@@ -136,7 +147,7 @@ export function TaskCard({
                 <span className="flex items-center gap-1 truncate max-w-[150px]">
                   <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="truncate">
-                    {JSON.parse(task.location).formatted?.split(',')[0] || 'Location'}
+                    {parseLocation(task.location)}
                   </span>
                 </span>
               )}
