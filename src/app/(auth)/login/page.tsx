@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation'
-import { auth, signIn } from '@/lib/auth'
-import { CircleDot, Github } from 'lucide-react'
+import { getSession } from '@/lib/auth-server'
+import { CircleDot } from 'lucide-react'
+import { LoginButton } from '@/components/features/login-button'
 
 export const metadata = {
   title: 'Login',
 }
 
 export default async function LoginPage() {
-  const session = await auth()
+  const session = await getSession()
 
   if (session?.user) {
     redirect('/dashboard')
@@ -31,20 +32,7 @@ export default async function LoginPage() {
 
         {/* Login form */}
         <div className="bg-card border rounded-xl p-6 shadow-sm">
-          <form
-            action={async () => {
-              'use server'
-              await signIn('github', { redirectTo: '/dashboard' })
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-foreground text-background rounded-lg font-medium hover:opacity-90 transition-opacity"
-            >
-              <Github className="h-5 w-5" />
-              Continue with GitHub
-            </button>
-          </form>
+          <LoginButton />
         </div>
 
         {/* Features preview */}

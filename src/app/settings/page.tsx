@@ -1,12 +1,13 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import { User, Palette, FolderOpen, LogOut } from 'lucide-react'
-import { auth, signOut } from '@/lib/auth'
+import { User, Palette, FolderOpen, Shield } from 'lucide-react'
+import { getSession } from '@/lib/auth-server'
 import { getCategories } from '@/lib/tasks'
 import { LoadingPage } from '@/components/ui/loading'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { CategoryManager } from '@/components/features/category-manager'
+import { SignOutButton } from '@/components/features/sign-out-button'
+import { SessionManager } from '@/components/features/session-manager'
 
 export const metadata = {
   title: 'Settings',
@@ -14,7 +15,7 @@ export const metadata = {
 
 async function SettingsContent() {
   const [session, categories] = await Promise.all([
-    auth(),
+    getSession(),
     getCategories(),
   ])
 
@@ -55,18 +56,23 @@ async function SettingsContent() {
               </div>
             </div>
 
-            <form
-              action={async () => {
-                'use server'
-                await signOut({ redirectTo: '/' })
-              }}
-              className="mt-6"
-            >
-              <Button type="submit" variant="outline" className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </Button>
-            </form>
+            <div className="mt-6">
+              <SignOutButton />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sessions section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Active Sessions</CardTitle>
+            </div>
+            <CardDescription>Manage your active sessions across devices</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SessionManager />
           </CardContent>
         </Card>
 

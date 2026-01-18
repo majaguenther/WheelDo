@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, CircleDot, History, Settings, LogOut } from 'lucide-react'
-import { signOut, useSession } from 'next-auth/react'
+import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
@@ -16,7 +16,12 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const { data: session } = authClient.useSession()
+
+  const handleSignOut = async () => {
+    await authClient.signOut()
+    window.location.href = '/'
+  }
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen border-r bg-background fixed left-0 top-0">
@@ -76,7 +81,7 @@ export function Sidebar() {
             </div>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={handleSignOut}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
           >
             <LogOut className="h-4 w-4" />

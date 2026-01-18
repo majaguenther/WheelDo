@@ -1,6 +1,6 @@
 import 'server-only'
 import { db } from './db'
-import { requireAuth } from './auth'
+import { requireAuth } from './auth-server'
 import type { TaskStatus, Urgency, Effort, RecurrenceType, Prisma } from '@/generated/prisma/client'
 
 export type TaskWithRelations = Prisma.TaskGetPayload<{

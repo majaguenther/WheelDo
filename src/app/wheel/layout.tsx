@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth-server'
 import { AppShell } from '@/components/ui/app-shell'
 
 export default async function WheelLayout({
@@ -7,7 +7,7 @@ export default async function WheelLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
+  const session = await getSession()
 
   if (!session?.user) {
     redirect('/login')

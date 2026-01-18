@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Plus, CircleDot } from 'lucide-react'
 import { getTasks, getActiveTask, getCategories, createDefaultCategories } from '@/lib/tasks'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth-server'
 import { TaskList } from '@/components/features/task-list'
 import { LoadingPage } from '@/components/ui/loading'
 import { CreateTaskButton } from '@/components/features/create-task-button'
@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 async function DashboardContent() {
-  const session = await auth()
+  const session = await getSession()
 
   // Ensure default categories exist
   if (session?.user?.id) {

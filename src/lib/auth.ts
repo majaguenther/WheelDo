@@ -1,41 +1,22 @@
-import NextAuth from 'next-auth'
-import GitHub from 'next-auth/providers/github'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import { db } from './db'
+import { betterAuth } from "better-auth"
+import { prismaAdapter } from "better-auth/adapters/prisma"
+import { db } from "./db"
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  adapter: PrismaAdapter(db as any),
-  providers: [
-    GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
-    }),
-  ],
-  pages: {
-    signIn: '/login',
-  },
-  callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
-      }
-      return session
+export const auth = betterAuth({
+  database: prismaAdapter(db, {
+    provider: "postgresql",
+  }),
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24,     // Update every 24 hours
   },
 })
 
-// Helper to get the current user's session on the server
-export async function getCurrentUser() {
-  const session = await auth()
-  return session?.user
-}
-
-// Helper to require authentication
-export async function requireAuth() {
-  const user = await getCurrentUser()
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
-  return user
-}
+export type Session = typeof auth.$Infer.Session
+export type User = typeof auth.$Infer.Session.user

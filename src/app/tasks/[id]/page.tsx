@@ -10,13 +10,9 @@ import {
   Zap,
   Repeat,
   FolderOpen,
-  Trash2,
-  Play,
-  Pause,
-  Check,
 } from 'lucide-react'
-import { auth } from '@/lib/auth'
-import { getTask, getCategories } from '@/lib/tasks'
+import { getSession } from '@/lib/auth-server'
+import { getTask } from '@/lib/tasks'
 import { formatDuration, formatRelativeTime, getDeadlineColor, cn } from '@/lib/utils'
 import { AppShell } from '@/components/ui/app-shell'
 import { LoadingPage } from '@/components/ui/loading'
@@ -43,7 +39,7 @@ interface TaskPageProps {
 }
 
 async function TaskContent({ params }: TaskPageProps) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     redirect('/login')
   }

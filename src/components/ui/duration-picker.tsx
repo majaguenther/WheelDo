@@ -13,9 +13,9 @@ interface DurationPickerProps {
 
 type TabType = 'minutes' | 'hours'
 
-// Presets stored as minutes - 6 each for perfect 3-column grid
+// Presets stored as minutes - 6 each for a perfect 3-column grid
 const MINUTE_PRESETS = [5, 10, 15, 20, 30, 45] as const
-const HOUR_PRESETS = [60, 90, 120, 180, 240, 300, 360] as const // 1h, 1.5h, 2h, 3h, 4h, 5h, 6h
+const HOUR_PRESETS = [60, 120, 180, 240, 300, 360] as const // 1h, 2h, 3h, 4h, 5h, 6h
 
 const ALL_PRESETS: Set<number> = new Set([...MINUTE_PRESETS, ...HOUR_PRESETS])
 
