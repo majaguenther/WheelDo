@@ -1,0 +1,188 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Auth.js models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Custom theme preferences
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+
+  accounts      Account[]
+  sessions      Session[]
+  tasks         Task[]
+  categories    Category[]
+  collaborations TaskCollaborator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application models
+model Category {
+  id     String @id @default(cuid())
+  name   String
+  color  String @default("#6366f1") // Default indigo
+  icon   String? // Lucide icon name
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Effort {
+  MINIMAL   // 1 - very easy
+  LOW       // 2 - easy
+  MODERATE  // 3 - medium
+  HIGH      // 4 - hard
+  EXTREME   // 5 - very hard
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+}
+
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  body        String?    @db.Text
+
+  // Duration in minutes
+  duration    Int?
+
+  // Location (stored as JSON with address and coordinates)
+  location    String?    @db.Text
+
+  // Effort level (1-5 scale)
+  effort      Effort     @default(MODERATE)
+
+  // Urgency level
+  urgency     Urgency    @default(MEDIUM)
+
+  // Deadline with optional time
+  deadline    DateTime?
+
+  // Status
+  status      TaskStatus @default(PENDING)
+
+  // Recurrence settings
+  recurrenceType   RecurrenceType @default(NONE)
+  recurrenceRule   String?        @db.Text // iCal RRULE format for complex patterns
+  nextOccurrence   DateTime?
+
+  // Dependencies (one level deep)
+  parentId    String?
+  parent      Task?      @relation("TaskDependencies", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Task[]     @relation("TaskDependencies")
+
+  // Category
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Owner
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Collaborators
+  collaborators TaskCollaborator[]
+
+  // Completion tracking
+  completedAt DateTime?
+
+  // Position for ordering
+  position    Int        @default(0)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, deadline])
+  @@index([parentId])
+}
+
+model TaskCollaborator {
+  id     String @id @default(cuid())
+  taskId String
+  userId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Permission level
+  canEdit Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([taskId, userId])
+}
