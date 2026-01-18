@@ -22,6 +22,13 @@ dependencies, and a "spin the wheel" mini-game for task selection. Users authent
 
 Clean and modern UI with good UX. Prioritize simplicity and ease of use.
 
+**Mobile-First Responsive Design:**
+- Design for mobile screens first, then scale up to desktop
+- Touch-friendly tap targets (min 44x44px)
+- Responsive layouts using Tailwind breakpoints (sm, md, lg, xl)
+- Bottom navigation or hamburger menu for mobile
+- Swipe gestures where appropriate (e.g., complete/defer tasks)
+
 ## Environment Variables
 
 Create a `.env.local` file in the project root (never commit this file):
@@ -87,14 +94,19 @@ src/
 │   ├── (auth)/               # Route group for auth pages
 │   │   ├── login/
 │   │   └── callback/
-│   ├── dashboard/            # Dashboard routes
+│   ├── dashboard/            # Dashboard routes (main todo list)
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── loading.tsx
+│   ├── tasks/                # Task routes
+│   │   └── [id]/             # Dynamic task detail/edit
+│   │       └── page.tsx
 │   ├── wheel/                # Wheel page
 │   │   └── page.tsx
 │   ├── history/              # Completion history
 │   │   └── page.tsx
+│   ├── settings/             # User settings
+│   │   └── page.tsx          # Profile, themes, account
 │   └── api/                  # API routes
 │       └── [...]/route.ts
 ├── components/               # React components
@@ -283,6 +295,25 @@ Usage:
 </main>
 ```
 
+### Responsive Patterns
+
+```tsx
+{/* Mobile-first: stack on mobile, row on desktop */}
+<div className="flex flex-col md:flex-row gap-4">
+
+{/* Hide on mobile, show on desktop */}
+<nav className="hidden md:block">
+
+{/* Show on mobile, hide on desktop */}
+<button className="md:hidden">
+
+{/* Responsive padding */}
+<div className="p-4 md:p-6 lg:p-8">
+
+{/* Responsive grid */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+```
+
 ## Best Practices
 
 ### Component Organization
@@ -382,10 +413,6 @@ category)
 
 - Archive view of all completed tasks with search
 - Ability to undo/revert accidental completions
-
-**Calendar Sync**
-
-- Integration with Google Calendar and Outlook
 
 **PWA Support**
 
