@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
+import { DurationPicker } from '@/components/ui/duration-picker'
 import { cn } from '@/lib/utils'
 import type { Category, Urgency, Effort, RecurrenceType } from '@prisma/client'
 
@@ -65,7 +66,7 @@ export function CreateTaskModal({
   // Form state
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [duration, setDuration] = useState('')
+  const [duration, setDuration] = useState<number | null>(null)
   const [location, setLocation] = useState('')
   const [urgency, setUrgency] = useState<Urgency>('MEDIUM')
   const [effort, setEffort] = useState<Effort>('MODERATE')
@@ -76,7 +77,7 @@ export function CreateTaskModal({
   const resetForm = () => {
     setTitle('')
     setBody('')
-    setDuration('')
+    setDuration(null)
     setLocation('')
     setUrgency('MEDIUM')
     setEffort('MODERATE')
@@ -99,7 +100,7 @@ export function CreateTaskModal({
           body: JSON.stringify({
             title: title.trim(),
             body: body.trim() || undefined,
-            duration: duration ? parseInt(duration, 10) : undefined,
+            duration: duration ?? undefined,
             location: location || undefined,
             urgency,
             effort,
@@ -154,43 +155,33 @@ export function CreateTaskModal({
           />
         </div>
 
-        {/* Quick options row */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Duration */}
-          <div className="space-y-2">
-            <Label htmlFor="duration" className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              Duration (min)
-            </Label>
-            <Input
-              id="duration"
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="30"
-              min="1"
-            />
-          </div>
+        {/* Category */}
+        <div className="space-y-2">
+          <Label htmlFor="category" className="flex items-center gap-1.5">
+            <FolderOpen className="h-3.5 w-3.5" />
+            Category
+          </Label>
+          <Select
+            id="category"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            <option value="">None</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </Select>
+        </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category" className="flex items-center gap-1.5">
-              <FolderOpen className="h-3.5 w-3.5" />
-              Category
-            </Label>
-            <Select
-              id="category"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <option value="">None</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </Select>
-          </div>
+        {/* Duration */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            Duration
+          </Label>
+          <DurationPicker value={duration} onChange={setDuration} />
         </div>
 
         {/* Urgency selector */}
