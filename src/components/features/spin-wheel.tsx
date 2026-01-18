@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import confetti from 'canvas-confetti'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { Task, Category } from '@prisma/client'
+import type { Task, Category } from '@/generated/prisma/client'
 
 interface SpinWheelProps {
   tasks: (Task & { category: Category | null })[]

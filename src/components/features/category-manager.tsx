@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Label } from '@/components/ui/label'
-import type { Category } from '@prisma/client'
+import type { Category } from '@/generated/prisma/client'
 
 interface CategoryManagerProps {
   categories: Category[]

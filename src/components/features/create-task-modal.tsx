@@ -22,7 +22,7 @@ import { Select } from '@/components/ui/select'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { DurationPicker } from '@/components/ui/duration-picker'
 import { cn } from '@/lib/utils'
-import type { Category, Urgency, Effort, RecurrenceType } from '@prisma/client'
+import type { Category, Urgency, Effort, RecurrenceType } from '@/generated/prisma/client'
 
 interface CreateTaskModalProps {
   isOpen: boolean

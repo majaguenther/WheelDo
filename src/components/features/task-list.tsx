@@ -6,7 +6,7 @@ import { TaskCard } from './task-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { ListTodo, Plus, Filter } from 'lucide-react'
-import type { Task, Category, TaskStatus } from '@prisma/client'
+import type { Task, Category, TaskStatus } from '@/generated/prisma/client'
 
 interface TaskListProps {
   tasks: (Task & {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import type { TaskStatus, Effort, Urgency, RecurrenceType } from '@prisma/client'
+import type { TaskStatus, Effort, Urgency, RecurrenceType } from '@/generated/prisma/client'
 
 export async function GET(
   request: NextRequest,

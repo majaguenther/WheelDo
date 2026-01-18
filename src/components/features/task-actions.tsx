@@ -4,7 +4,7 @@ import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Play, Pause, Check, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Task, TaskStatus } from '@prisma/client'
+import type { Task, TaskStatus } from '@/generated/prisma/client'
 
 interface TaskActionsProps {
   task: Task

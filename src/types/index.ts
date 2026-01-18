@@ -1,4 +1,4 @@
-import type { Task, Category, User, Urgency, Effort, TaskStatus, RecurrenceType } from '@prisma/client'
+import type { Task, Category, User, Urgency, Effort, TaskStatus, RecurrenceType } from '@/generated/prisma/client'
 
 // Re-export Prisma types
 export type { Task, Category, User, Urgency, Effort, TaskStatus, RecurrenceType }

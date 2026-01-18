@@ -17,7 +17,7 @@ import {
 import { cn, formatDuration, formatRelativeTime, getDeadlineColor } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { Task, Category, Urgency, Effort, TaskStatus } from '@prisma/client'
+import type { Task, Category, Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
 
 interface TaskCardProps {
   task: Task & {
