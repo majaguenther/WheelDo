@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { cn } from '@/lib/utils'
 import type { Category, Urgency, Effort, RecurrenceType } from '@prisma/client'
 
@@ -307,19 +308,15 @@ export function CreateTaskModal({
 
             {/* Location */}
             <div className="space-y-2">
-              <Label htmlFor="location" className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" />
                 Location
               </Label>
-              <Input
-                id="location"
+              <LocationAutocomplete
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Enter a location..."
+                onChange={setLocation}
+                placeholder="Search for a location..."
               />
-              <p className="text-xs text-muted-foreground">
-                Location autocomplete coming soon!
-              </p>
             </div>
           </div>
         )}

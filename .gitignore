@@ -27,6 +27,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.prod
 
 # vercel
 .vercel
@@ -36,3 +37,4 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+!/.env.prod

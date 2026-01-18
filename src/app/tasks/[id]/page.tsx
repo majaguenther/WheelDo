@@ -24,6 +24,16 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { TaskActions } from '@/components/features/task-actions'
 
+// Safely parse location - handles both JSON objects and plain text
+function parseLocation(location: string): string {
+  try {
+    const parsed = JSON.parse(location)
+    return parsed.formatted || parsed.name || location
+  } catch {
+    return location
+  }
+}
+
 export const metadata = {
   title: 'Task Details',
 }
@@ -184,7 +194,7 @@ async function TaskContent({ params }: TaskPageProps) {
                   <div>
                     <p className="text-sm text-muted-foreground">Location</p>
                     <p className="font-medium">
-                      {JSON.parse(task.location).formatted || task.location}
+                      {parseLocation(task.location)}
                     </p>
                   </div>
                 </div>
