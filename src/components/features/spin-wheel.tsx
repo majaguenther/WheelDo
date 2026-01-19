@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, useTransition } from 'react'
+import { useState, useCallback, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import confetti from 'canvas-confetti'
 import { Triangle, Loader2 } from 'lucide-react'
@@ -26,88 +26,41 @@ const COLORS = [
   '#3b82f6', // blue
 ]
 
+// SVG coordinate helpers
+const SIZE = 320
+const CENTER = SIZE / 2
+const RADIUS = CENTER - 10
+
+function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  }
+}
+
+function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(cx, cy, radius, endAngle)
+  const end = polarToCartesian(cx, cy, radius, startAngle)
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1'
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength - 3) + '...'
+}
+
 export function SpinWheel({ tasks }: SpinWheelProps) {
   const router = useRouter()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [rotation, setRotation] = useState(0)
   const [selectedTask, setSelectedTask] = useState<TaskDTO | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const animationRef = useRef<number | null>(null)
 
   const segmentAngle = 360 / tasks.length
-
-  // Draw wheel on canvas
-  const drawWheel = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const size = canvas.width
-    const center = size / 2
-    const radius = center - 10
-
-    ctx.clearRect(0, 0, size, size)
-
-    tasks.forEach((task, index) => {
-      const startAngle = (index * segmentAngle - 90 + rotation) * (Math.PI / 180)
-      const endAngle = ((index + 1) * segmentAngle - 90 + rotation) * (Math.PI / 180)
-
-      ctx.beginPath()
-      ctx.moveTo(center, center)
-      ctx.arc(center, center, radius, startAngle, endAngle)
-      ctx.closePath()
-      ctx.fillStyle = task.category?.color || COLORS[index % COLORS.length]
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-      ctx.lineWidth = 2
-      ctx.stroke()
-
-      // Text
-      const textAngle = startAngle + (endAngle - startAngle) / 2
-      const textRadius = radius * 0.65
-      ctx.save()
-      ctx.translate(
-        center + Math.cos(textAngle) * textRadius,
-        center + Math.sin(textAngle) * textRadius
-      )
-      ctx.rotate(textAngle + Math.PI / 2)
-      ctx.fillStyle = 'white'
-      ctx.font = 'bold 12px system-ui'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-
-      let text = task.title
-      const maxWidth = radius * 0.5
-      if (ctx.measureText(text).width > maxWidth) {
-        while (ctx.measureText(text + '...').width > maxWidth && text.length > 0) {
-          text = text.slice(0, -1)
-        }
-        text += '...'
-      }
-      ctx.fillText(text, 0, 0)
-      ctx.restore()
-    })
-
-    // Center
-    ctx.beginPath()
-    ctx.arc(center, center, 30, 0, 2 * Math.PI)
-    ctx.fillStyle = '#1e293b'
-    ctx.fill()
-    ctx.strokeStyle = 'white'
-    ctx.lineWidth = 3
-    ctx.stroke()
-    ctx.fillStyle = 'white'
-    ctx.font = 'bold 14px system-ui'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('SPIN', center, center)
-  }, [tasks, rotation, segmentAngle])
-
-  useEffect(() => {
-    drawWheel()
-  }, [drawWheel])
 
   const spin = useCallback(() => {
     if (isSpinning || tasks.length === 0) return
@@ -133,9 +86,10 @@ export function SpinWheel({ tasks }: SpinWheelProps) {
       setRotation(currentRotation % 360)
 
       if (progress < 1) {
-        requestAnimationFrame(animate)
+        animationRef.current = requestAnimationFrame(animate)
       } else {
         setIsSpinning(false)
+        animationRef.current = null
         const normalizedRotation = (360 - (currentRotation % 360)) % 360
         const selectedIndex = Math.floor(normalizedRotation / segmentAngle)
         setSelectedTask(tasks[selectedIndex])
@@ -143,7 +97,7 @@ export function SpinWheel({ tasks }: SpinWheelProps) {
       }
     }
 
-    requestAnimationFrame(animate)
+    animationRef.current = requestAnimationFrame(animate)
   }, [isSpinning, tasks, segmentAngle, rotation])
 
   const handleStartTask = () => {
@@ -160,6 +114,9 @@ export function SpinWheel({ tasks }: SpinWheelProps) {
     })
   }
 
+  // Calculate max characters for text based on segment count
+  const maxChars = tasks.length <= 4 ? 15 : tasks.length <= 8 ? 10 : 8
+
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="relative">
@@ -167,15 +124,81 @@ export function SpinWheel({ tasks }: SpinWheelProps) {
           className="absolute -top-6 left-1/2 -translate-x-1/2 h-8 w-8 text-primary fill-primary rotate-180 z-10"
           aria-hidden="true"
         />
-        <canvas
-          ref={canvasRef}
-          width={320}
-          height={320}
-          className={cn('touch-none cursor-pointer', isSpinning && 'cursor-not-allowed')}
+        <svg
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className={cn(
+            'w-80 h-80 touch-none cursor-pointer',
+            isSpinning && 'cursor-not-allowed'
+          )}
           onClick={spin}
           role="button"
           aria-label="Spin the wheel"
-        />
+        >
+          {/* Wheel segments */}
+          <g
+            style={{
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: 'center',
+            }}
+          >
+            {tasks.map((task, index) => {
+              const startAngle = index * segmentAngle
+              const endAngle = (index + 1) * segmentAngle
+              const midAngle = startAngle + segmentAngle / 2
+              const textRadius = RADIUS * 0.65
+              const textPosition = polarToCartesian(CENTER, CENTER, textRadius, midAngle)
+              const color = task.category?.color || COLORS[index % COLORS.length]
+
+              return (
+                <g key={task.id}>
+                  {/* Pie slice */}
+                  <path
+                    d={describeArc(CENTER, CENTER, RADIUS, startAngle, endAngle)}
+                    fill={color}
+                    stroke="rgba(255,255,255,0.3)"
+                    strokeWidth={2}
+                  />
+                  {/* Text label */}
+                  <text
+                    x={textPosition.x}
+                    y={textPosition.y}
+                    fill="white"
+                    fontSize={12}
+                    fontWeight="bold"
+                    fontFamily="system-ui, sans-serif"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    transform={`rotate(${midAngle}, ${textPosition.x}, ${textPosition.y})`}
+                  >
+                    {truncateText(task.title, maxChars)}
+                  </text>
+                </g>
+              )
+            })}
+          </g>
+
+          {/* Center button */}
+          <circle
+            cx={CENTER}
+            cy={CENTER}
+            r={30}
+            fill="#1e293b"
+            stroke="white"
+            strokeWidth={3}
+          />
+          <text
+            x={CENTER}
+            y={CENTER}
+            fill="white"
+            fontSize={14}
+            fontWeight="bold"
+            fontFamily="system-ui, sans-serif"
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            SPIN
+          </text>
+        </svg>
       </div>
 
       <Button size="lg" onClick={spin} disabled={isSpinning} className="w-full max-w-xs">

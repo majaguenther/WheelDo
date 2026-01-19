@@ -198,7 +198,7 @@ export const getPotentialParentTasks = (userId: string) =>
         where: {
           OR: [{ userId }, { collaborators: { some: { userId, canEdit: true } } }],
           parentId: null, // Only root-level tasks can be parents
-          status: { not: 'COMPLETED' }, // Don't show completed tasks as potential parents
+          status: { in: ['PENDING', 'IN_PROGRESS'] }, // Only show active tasks as potential parents
         },
         include: taskListInclude,
         orderBy: [{ urgency: 'desc' }, { deadline: 'asc' }, { title: 'asc' }],
