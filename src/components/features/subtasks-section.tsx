@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button'
 import type { ChildTaskDTO } from '@/data/dto/task.types'
 
 interface SubtasksSectionProps {
-  children: ChildTaskDTO[]
-  parentId: string
+  subtasks: ChildTaskDTO[]
   onAddSubtask?: () => void
 }
 
@@ -18,13 +17,13 @@ interface SubtasksSectionProps {
  * GitHub-style collapsible subtasks section for task detail page
  * Shows progress badge and list of subtasks with status icons
  */
-export function SubtasksSection({ children, parentId, onAddSubtask }: SubtasksSectionProps) {
+export function SubtasksSection({ subtasks, onAddSubtask }: SubtasksSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
-  if (children.length === 0 && !onAddSubtask) return null
+  if (subtasks.length === 0 && !onAddSubtask) return null
 
-  const completed = children.filter((c) => c.status === 'COMPLETED').length
-  const total = children.length
+  const completed = subtasks.filter((c) => c.status === 'COMPLETED').length
+  const total = subtasks.length
 
   const urgencyColors = {
     HIGH: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
@@ -61,7 +60,7 @@ export function SubtasksSection({ children, parentId, onAddSubtask }: SubtasksSe
       {isExpanded && (
         <div className="divide-y">
           {/* Subtask list */}
-          {children.map((child) => (
+          {subtasks.map((child) => (
             <Link
               key={child.id}
               href={`/tasks/${child.id}`}
@@ -119,7 +118,7 @@ export function SubtasksSection({ children, parentId, onAddSubtask }: SubtasksSe
           )}
 
           {/* Empty state */}
-          {children.length === 0 && onAddSubtask && (
+          {subtasks.length === 0 && onAddSubtask && (
             <div className="p-4 text-center text-sm text-muted-foreground">
               No subtasks yet. Create one to break this task into smaller pieces.
             </div>

@@ -63,7 +63,7 @@ export function LocationAutocomplete({
 
   const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY
 
-  // Parse initial value if it's JSON
+  // Parse value if it's JSON (handles both initial and external updates)
   useEffect(() => {
     if (value) {
       try {
@@ -73,9 +73,14 @@ export function LocationAutocomplete({
       } catch {
         // If parsing fails, treat as plain text
         setInputValue(value)
+        setSelectedLocation(null)
       }
+    } else {
+      // Clear when value is empty
+      setInputValue('')
+      setSelectedLocation(null)
     }
-  }, [])
+  }, [value])
 
 
   const fetchSuggestions = useCallback(async (query: string) => {

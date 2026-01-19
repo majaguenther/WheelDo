@@ -260,8 +260,7 @@ async function TaskContent({ params }: TaskPageProps) {
       {(hasChildren || task.role === 'owner') && (
         <div className="mt-6">
           <SubtasksSection
-            children={task.children || []}
-            parentId={task.id}
+            subtasks={task.children || []}
             // TODO: Add onAddSubtask handler to open create modal with parentId
           />
         </div>

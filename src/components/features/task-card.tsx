@@ -56,7 +56,6 @@ export const TaskCard = memo(function TaskCard({
 }: TaskCardProps) {
   const router = useRouter()
 
-  const hasChildren = task.children && task.children.length > 0
   const deadlineColor = useMemo(
     () => getDeadlineColor(task.deadline),
     [task.deadline]

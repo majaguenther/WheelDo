@@ -3,7 +3,7 @@ import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentUser } from './auth'
-import { toTaskDTO, toTaskDetailDTO, type TaskDTO, type TaskDetailDTO, type ChildTaskDTO } from './dto/task.dto'
+import { toTaskDTO, toTaskDetailDTO, type TaskDTO, type TaskDetailDTO } from './dto/task.dto'
 
 // ============================================
 // Helper functions for parent/child dependencies

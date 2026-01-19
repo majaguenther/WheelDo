@@ -7,49 +7,52 @@ import { usePWA } from './pwa-provider'
 const DISMISS_STORAGE_KEY = 'pwa-install-dismissed'
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
+// Helper to detect iOS (runs only on client)
+function getIsIOS(): boolean {
+  if (typeof window === 'undefined') return false
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+    // @ts-expect-error - MSStream is IE-specific
+    !window.MSStream
+  )
+}
+
+// Helper to check if prompt was dismissed
+function getIsDismissed(): boolean {
+  if (typeof window === 'undefined') return true
+  const dismissedAt = localStorage.getItem(DISMISS_STORAGE_KEY)
+  if (dismissedAt) {
+    const dismissedTime = parseInt(dismissedAt, 10)
+    const now = Date.now()
+    // If dismissed more than 7 days ago, show again
+    if (now - dismissedTime > DISMISS_DURATION_MS) {
+      localStorage.removeItem(DISMISS_STORAGE_KEY)
+      return false
+    }
+    return true
+  }
+  return false
+}
+
 export function InstallPrompt() {
   const { isInstallable, isInstalled, installPrompt } = usePWA()
-  const [isDismissed, setIsDismissed] = useState(true)
+  // Use lazy initialization to avoid sync setState in effects
+  const [isDismissed, setIsDismissed] = useState(getIsDismissed)
   const [isVisible, setIsVisible] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
+  const isIOS = getIsIOS()
 
-  // Check if the prompt was previously dismissed and detect iOS
+  // Compute whether the prompt should be shown
+  const shouldShow = isIOS
+    ? !isInstalled && !isDismissed
+    : isInstallable && !isInstalled && !isDismissed
+
+  // Show the prompt after a delay when conditions are met
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    // Detect iOS
-    const isIOSDevice =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      // @ts-expect-error - MSStream is IE-specific
-      !window.MSStream
-
-    setIsIOS(isIOSDevice)
-
-    const dismissedAt = localStorage.getItem(DISMISS_STORAGE_KEY)
-    if (dismissedAt) {
-      const dismissedTime = parseInt(dismissedAt, 10)
-      const now = Date.now()
-      // If dismissed more than 7 days ago, show again
-      if (now - dismissedTime > DISMISS_DURATION_MS) {
-        localStorage.removeItem(DISMISS_STORAGE_KEY)
-        setIsDismissed(false)
-      }
-    } else {
-      setIsDismissed(false)
-    }
-  }, [])
-
-  // Show the prompt after a delay and when conditions are met
-  useEffect(() => {
-    // For iOS, show if not installed and not dismissed
-    // For other browsers, show only if installable
-    const shouldShow = isIOS
-      ? !isInstalled && !isDismissed
-      : isInstallable && !isInstalled && !isDismissed
-
+    // Reset visibility when conditions change to not show
     if (!shouldShow) {
-      setIsVisible(false)
-      return
+      // Use a microtask to avoid sync setState warning
+      const id = requestAnimationFrame(() => setIsVisible(false))
+      return () => cancelAnimationFrame(id)
     }
 
     // Show after 3 seconds to not interrupt initial experience
@@ -58,7 +61,7 @@ export function InstallPrompt() {
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [isInstallable, isInstalled, isDismissed, isIOS])
+  }, [shouldShow])
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISS_STORAGE_KEY, Date.now().toString())

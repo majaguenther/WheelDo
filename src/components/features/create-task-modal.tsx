@@ -72,7 +72,12 @@ export function CreateTaskModal({
 
   // Update parentId when initialParentId prop changes
   useEffect(() => {
-    setSelectedParentId(initialParentId || null)
+    // Use requestAnimationFrame to avoid sync setState warning
+    // This syncs the selected parent when the modal reopens with a different initial parent
+    const id = requestAnimationFrame(() => {
+      setSelectedParentId(initialParentId || null)
+    })
+    return () => cancelAnimationFrame(id)
   }, [initialParentId])
 
   // Determine if task is a subtask (has parent)

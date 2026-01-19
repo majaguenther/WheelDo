@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
@@ -63,13 +63,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isOpen) {
-      loadData()
-    }
-  }, [isOpen, taskId])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -93,7 +87,13 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
     } finally {
       setLoading(false)
     }
-  }
+  }, [taskId, isOwner])
+
+  useEffect(() => {
+    if (isOpen) {
+      loadData()
+    }
+  }, [isOpen, loadData])
 
   const createInvite = async () => {
     setCreatingInvite(true)
@@ -132,7 +132,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
 
       if (!res.ok) throw new Error('Failed to revoke invite')
       setInvites(invites.filter((i) => i.id !== inviteId))
-    } catch (err) {
+    } catch {
       setError('Failed to revoke invite')
     }
   }
@@ -147,7 +147,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
 
       if (!res.ok) throw new Error('Failed to remove collaborator')
       setCollaborators(collaborators.filter((c) => c.userId !== userId))
-    } catch (err) {
+    } catch {
       setError('Failed to remove collaborator')
     }
   }
@@ -164,7 +164,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
       setCollaborators(collaborators.map((c) =>
         c.userId === userId ? { ...c, canEdit } : c
       ))
-    } catch (err) {
+    } catch {
       setError('Failed to update role')
     }
   }
@@ -174,7 +174,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
       await navigator.clipboard.writeText(url)
       setCopiedInviteId(inviteId)
       setTimeout(() => setCopiedInviteId(null), 2000)
-    } catch (err) {
+    } catch {
       setError('Failed to copy to clipboard')
     }
   }

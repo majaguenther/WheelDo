@@ -44,7 +44,10 @@ interface PWAProviderProps {
 
 export function PWAProvider({ children }: PWAProviderProps) {
   const { isReady: isServiceWorkerReady } = useServiceWorker()
-  const [isOnline, setIsOnline] = useState(true)
+  // Lazy initialization for online state to avoid calling navigator.onLine during SSR
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof window !== 'undefined' ? navigator.onLine : true
+  )
   const [isInstallable, setIsInstallable] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
   const [deferredPrompt, setDeferredPrompt] =
@@ -53,8 +56,6 @@ export function PWAProvider({ children }: PWAProviderProps) {
   // Track online/offline status
   useEffect(() => {
     if (typeof window === 'undefined') return
-
-    setIsOnline(navigator.onLine)
 
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
