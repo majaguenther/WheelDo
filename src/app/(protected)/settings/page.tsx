@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import { User, Palette, FolderOpen, Shield, Bell } from 'lucide-react'
+import { User, Palette, FolderOpen, Shield, Bell, Key } from 'lucide-react'
 import { getCurrentUser } from '@/data/auth'
 import { getCategoriesForUser } from '@/data/categories'
 import { SettingsSkeleton } from '@/components/skeletons'
@@ -10,6 +10,7 @@ import { SignOutButton } from '@/components/features/sign-out-button'
 import { SessionManager } from '@/components/features/session-manager'
 import { ThemeSelector } from '@/components/features/theme-selector'
 import { PushNotificationManager } from '@/components/pwa'
+import { PasskeyManager } from '@/components/features/passkey-manager'
 
 export const metadata = {
   title: 'Settings',
@@ -73,6 +74,20 @@ async function SettingsContent() {
           </CardHeader>
           <CardContent>
             <SessionManager />
+          </CardContent>
+        </Card>
+
+        {/* Passkeys section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Passkeys</CardTitle>
+            </div>
+            <CardDescription>Sign in securely with Face ID, Touch ID, or Windows Hello</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PasskeyManager />
           </CardContent>
         </Card>
 
