@@ -21,8 +21,9 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { DurationPicker } from '@/components/ui/duration-picker'
+import { UrgencySelector } from '@/components/ui/urgency-selector'
+import { EffortSelector } from '@/components/ui/effort-selector'
 import { createTask } from '@/actions/tasks'
-import { cn } from '@/lib/utils'
 import type { CategoryDTO } from '@/data/dto/category.dto'
 import type { Urgency, Effort, RecurrenceType } from '@/generated/prisma/client'
 
@@ -32,20 +33,6 @@ interface CreateTaskModalProps {
   categories: CategoryDTO[]
   parentId?: string
 }
-
-const urgencyOptions: { value: Urgency; label: string; color: string }[] = [
-  { value: 'LOW', label: 'Low', color: 'text-green-500' },
-  { value: 'MEDIUM', label: 'Medium', color: 'text-yellow-500' },
-  { value: 'HIGH', label: 'High', color: 'text-red-500' },
-]
-
-const effortOptions: { value: Effort; label: string; count: number }[] = [
-  { value: 'MINIMAL', label: 'Minimal', count: 1 },
-  { value: 'LOW', label: 'Low', count: 2 },
-  { value: 'MODERATE', label: 'Moderate', count: 3 },
-  { value: 'HIGH', label: 'High', count: 4 },
-  { value: 'EXTREME', label: 'Extreme', count: 5 },
-]
 
 const recurrenceOptions: { value: RecurrenceType; label: string }[] = [
   { value: 'NONE', label: 'No repeat' },
@@ -206,23 +193,7 @@ export function CreateTaskModal({
             <Flag className="h-3.5 w-3.5" />
             Urgency
           </Label>
-          <div className="flex gap-2">
-            {urgencyOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setUrgency(opt.value)}
-                className={cn(
-                  'flex-1 px-3 py-2 text-sm rounded-lg border transition-colors',
-                  urgency === opt.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:bg-secondary'
-                )}
-              >
-                <span className={opt.color}>{opt.label}</span>
-              </button>
-            ))}
-          </div>
+          <UrgencySelector value={urgency} onChange={setUrgency} />
         </div>
 
         {/* Effort selector */}
@@ -231,36 +202,7 @@ export function CreateTaskModal({
             <Zap className="h-3.5 w-3.5" />
             Effort Level
           </Label>
-          <div className="flex gap-1">
-            {effortOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setEffort(opt.value)}
-                className={cn(
-                  'flex-1 px-2 py-2 text-sm rounded-lg border transition-colors flex flex-col items-center gap-1',
-                  effort === opt.value
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:bg-secondary'
-                )}
-                title={opt.label}
-              >
-                <div className="flex gap-0.5">
-                  {Array.from({ length: opt.count }).map((_, i) => (
-                    <Zap
-                      key={i}
-                      className={cn(
-                        'h-3 w-3',
-                        effort === opt.value
-                          ? 'fill-yellow-500 text-yellow-500'
-                          : 'text-muted-foreground'
-                      )}
-                    />
-                  ))}
-                </div>
-              </button>
-            ))}
-          </div>
+          <EffortSelector value={effort} onChange={setEffort} />
         </div>
 
         {/* Advanced options toggle */}

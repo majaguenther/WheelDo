@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { TaskCard } from './task-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -21,30 +21,43 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
   const [isPending, startTransition] = useTransition()
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress'>('all')
 
-  // Separate active task from others
-  const activeTask = tasks.find((t) => t.id === activeTaskId)
-  const otherTasks = tasks.filter((t) => t.id !== activeTaskId && t.parentId === null)
+  // Memoize active task lookup
+  const activeTask = useMemo(
+    () => tasks.find((t) => t.id === activeTaskId),
+    [tasks, activeTaskId]
+  )
 
-  // Filter tasks
-  const filteredTasks = otherTasks.filter((task) => {
-    if (filter === 'all') return task.status !== 'COMPLETED'
-    if (filter === 'pending') return task.status === 'PENDING'
-    if (filter === 'in_progress') return task.status === 'IN_PROGRESS'
-    return true
-  })
+  // Memoize other tasks filtering
+  const otherTasks = useMemo(
+    () => tasks.filter((t) => t.id !== activeTaskId && t.parentId === null),
+    [tasks, activeTaskId]
+  )
 
-  const handleStatusChange = async (taskId: string, status: TaskStatus) => {
-    startTransition(async () => {
-      const result = await updateTaskStatus({ taskId, status })
-
-      if (!result.success) {
-        console.error('Failed to update task:', result.error.message)
-        // Could show a toast notification here
-      }
-
-      router.refresh()
+  // Memoize filtered tasks
+  const filteredTasks = useMemo(() => {
+    return otherTasks.filter((task) => {
+      if (filter === 'all') return task.status !== 'COMPLETED'
+      if (filter === 'pending') return task.status === 'PENDING'
+      if (filter === 'in_progress') return task.status === 'IN_PROGRESS'
+      return true
     })
-  }
+  }, [otherTasks, filter])
+
+  // Memoize status change handler
+  const handleStatusChange = useCallback(
+    async (taskId: string, status: TaskStatus) => {
+      startTransition(async () => {
+        const result = await updateTaskStatus({ taskId, status })
+
+        if (!result.success) {
+          console.error('Failed to update task:', result.error.message)
+        }
+
+        router.refresh()
+      })
+    },
+    [router]
+  )
 
   if (tasks.length === 0) {
     return (

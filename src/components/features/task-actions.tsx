@@ -5,10 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Play, Pause, Check, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ShareTaskModal } from './share-task-modal'
-import type { Task, TaskStatus } from '@/generated/prisma/client'
+import { updateTaskStatus, deleteTask as deleteTaskAction } from '@/actions/tasks'
+import type { TaskStatus } from '@/generated/prisma/client'
 
 interface TaskActionsProps {
-  task: Task
+  task: {
+    id: string
+    title: string
+    status: TaskStatus
+  }
   role?: 'owner' | 'editor' | 'viewer'
 }
 
@@ -19,45 +24,37 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
   const isOwner = role === 'owner'
   const canEdit = role === 'owner' || role === 'editor'
 
-  const updateStatus = async (status: TaskStatus) => {
+  const handleUpdateStatus = async (status: TaskStatus) => {
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${task.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
-        })
+      const result = await updateTaskStatus({ taskId: task.id, status })
 
-        if (!res.ok) throw new Error('Failed to update task')
+      if (!result.success) {
+        console.error('Failed to update task:', result.error.message)
+        return
+      }
 
-        router.refresh()
-        if (status === 'COMPLETED') {
-          router.push('/dashboard')
-        }
-      } catch (error) {
-        console.error('Failed to update task:', error)
+      router.refresh()
+      if (status === 'COMPLETED') {
+        router.push('/dashboard')
       }
     })
   }
 
-  const deleteTask = async () => {
+  const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
       return
     }
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${task.id}`, {
-          method: 'DELETE',
-        })
+      const result = await deleteTaskAction(task.id)
 
-        if (!res.ok) throw new Error('Failed to delete task')
-
-        router.push('/dashboard')
-        router.refresh()
-      } catch (error) {
-        console.error('Failed to delete task:', error)
+      if (!result.success) {
+        console.error('Failed to delete task:', result.error.message)
+        return
       }
+
+      router.push('/dashboard')
+      router.refresh()
     })
   }
 
@@ -68,7 +65,7 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
     <>
       <div className={`flex flex-wrap gap-3 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}>
         {canEdit && !isCompleted && !isInProgress && (
-          <Button onClick={() => updateStatus('IN_PROGRESS')} className="gap-2">
+          <Button onClick={() => handleUpdateStatus('IN_PROGRESS')} className="gap-2">
             <Play className="h-4 w-4" />
             Start Task
           </Button>
@@ -76,11 +73,11 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
 
         {canEdit && isInProgress && (
           <>
-            <Button onClick={() => updateStatus('PENDING')} variant="outline" className="gap-2">
+            <Button onClick={() => handleUpdateStatus('PENDING')} variant="outline" className="gap-2">
               <Pause className="h-4 w-4" />
               Defer
             </Button>
-            <Button onClick={() => updateStatus('COMPLETED')} className="gap-2">
+            <Button onClick={() => handleUpdateStatus('COMPLETED')} className="gap-2">
               <Check className="h-4 w-4" />
               Complete
             </Button>
@@ -88,7 +85,7 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
         )}
 
         {canEdit && isCompleted && (
-          <Button onClick={() => updateStatus('PENDING')} variant="outline" className="gap-2">
+          <Button onClick={() => handleUpdateStatus('PENDING')} variant="outline" className="gap-2">
             Reopen Task
           </Button>
         )}
@@ -104,7 +101,7 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
         </Button>
 
         {isOwner && (
-          <Button onClick={deleteTask} variant="destructive" className="gap-2 ml-auto">
+          <Button onClick={handleDelete} variant="destructive" className="gap-2 ml-auto">
             <Trash2 className="h-4 w-4" />
             Delete
           </Button>

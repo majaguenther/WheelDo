@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Clock,
@@ -52,7 +52,7 @@ function parseLocation(location: string): string {
   }
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   onStatusChange,
   showChildren = true,
@@ -291,4 +291,4 @@ export function TaskCard({
       )}
     </div>
   )
-}
+})
