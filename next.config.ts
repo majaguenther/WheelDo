@@ -49,10 +49,6 @@ const nextConfig: NextConfig = {
             key: "Service-Worker-Allowed",
             value: "/",
           },
-          {
-            key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self'",
-          },
         ],
       },
     ];

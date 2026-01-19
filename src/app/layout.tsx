@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
+import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import { getThemeScript, isValidThemeId } from '@/lib/themes'
@@ -75,9 +76,12 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Inline script to apply theme before hydration (prevents FOUC) */}
-        {/* Safe: themeScript is generated from predefined color presets, not user input */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Theme script - runs before hydration to prevent FOUC */}
+        {/* Content is safe: generated from predefined color presets, not user input */}
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
+        >{themeScript}</Script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
