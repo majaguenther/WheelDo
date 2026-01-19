@@ -1,124 +1,63 @@
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+
+// Use Vercel's KV environment variable names (backed by Upstash)
+// These are already configured in the Vercel project
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
+})
+
 /**
- * Simple in-memory LRU-based rate limiter
- * For production, consider using Redis or Upstash
+ * Pre-configured rate limiters for common use cases
+ * Uses Upstash Redis for distributed rate limiting (works on serverless)
  */
+export const rateLimiters = {
+  /** 5 requests per minute - for invite creation */
+  invites: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, '1 m'),
+    prefix: 'ratelimit:invites',
+    analytics: true, // Enable analytics in Upstash dashboard
+  }),
 
-interface RateLimitEntry {
-  count: number
-  resetAt: number
-}
+  /** 10 requests per minute - for general API calls */
+  api: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, '1 m'),
+    prefix: 'ratelimit:api',
+    analytics: true,
+  }),
 
-// LRU cache with max 10000 entries
-const cache = new Map<string, RateLimitEntry>()
-const MAX_CACHE_SIZE = 10000
-
-function cleanupOldEntries() {
-  const now = Date.now()
-  for (const [key, entry] of cache.entries()) {
-    if (entry.resetAt < now) {
-      cache.delete(key)
-    }
-  }
-}
-
-function evictIfNeeded() {
-  if (cache.size >= MAX_CACHE_SIZE) {
-    // Delete oldest 10% of entries
-    const keysToDelete = Array.from(cache.keys()).slice(0, MAX_CACHE_SIZE * 0.1)
-    keysToDelete.forEach((key) => cache.delete(key))
-  }
-}
-
-export interface RateLimitConfig {
-  /** Maximum number of requests allowed within the window */
-  limit: number
-  /** Time window in milliseconds */
-  windowMs: number
+  /** 3 requests per minute - for login attempts */
+  auth: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(3, '1 m'),
+    prefix: 'ratelimit:auth',
+    analytics: true,
+  }),
 }
 
 export interface RateLimitResult {
   success: boolean
   remaining: number
-  resetAt: number
+  reset: number
 }
 
 /**
  * Check if a request is within rate limits
+ * @param limiter - The rate limiter to use
  * @param identifier - Unique identifier (e.g., userId, IP address)
- * @param config - Rate limit configuration
  * @returns Result indicating if request is allowed
  */
-export function checkRateLimit(
-  identifier: string,
-  config: RateLimitConfig
-): RateLimitResult {
-  const now = Date.now()
-  const key = `rate_limit:${identifier}`
-
-  // Periodic cleanup
-  if (Math.random() < 0.01) {
-    cleanupOldEntries()
-    evictIfNeeded()
-  }
-
-  const existing = cache.get(key)
-
-  // If no existing entry or window has expired, start fresh
-  if (!existing || existing.resetAt < now) {
-    const entry: RateLimitEntry = {
-      count: 1,
-      resetAt: now + config.windowMs,
-    }
-    cache.set(key, entry)
-    return {
-      success: true,
-      remaining: config.limit - 1,
-      resetAt: entry.resetAt,
-    }
-  }
-
-  // Check if over limit
-  if (existing.count >= config.limit) {
-    return {
-      success: false,
-      remaining: 0,
-      resetAt: existing.resetAt,
-    }
-  }
-
-  // Increment count
-  existing.count++
-  cache.set(key, existing)
-
+export async function checkRateLimit(
+  limiter: Ratelimit,
+  identifier: string
+): Promise<RateLimitResult> {
+  const result = await limiter.limit(identifier)
   return {
-    success: true,
-    remaining: config.limit - existing.count,
-    resetAt: existing.resetAt,
+    success: result.success,
+    remaining: result.remaining,
+    reset: result.reset,
   }
-}
-
-/**
- * Pre-configured rate limiters for common use cases
- */
-export const rateLimiters = {
-  /** 5 requests per minute - for invite creation */
-  invites: (userId: string) =>
-    checkRateLimit(`invites:${userId}`, {
-      limit: 5,
-      windowMs: 60 * 1000, // 1 minute
-    }),
-
-  /** 10 requests per minute - for general API calls */
-  api: (userId: string) =>
-    checkRateLimit(`api:${userId}`, {
-      limit: 10,
-      windowMs: 60 * 1000,
-    }),
-
-  /** 3 requests per minute - for login attempts */
-  auth: (identifier: string) =>
-    checkRateLimit(`auth:${identifier}`, {
-      limit: 3,
-      windowMs: 60 * 1000,
-    }),
 }

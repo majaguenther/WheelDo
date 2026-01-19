@@ -81,7 +81,7 @@ export const getTasksForUser = (userId: string) =>
       return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks', userId],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 /**
@@ -101,7 +101,7 @@ export const getActiveTaskForUser = (userId: string) =>
       return toTaskDTOFromList(task, userId)
     },
     ['tasks', userId, 'active'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 /**
@@ -121,7 +121,7 @@ export const getCompletedTasksForUser = (userId: string) =>
       return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks', userId, 'completed'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 /**
@@ -163,7 +163,7 @@ export const getWheelEligibleTasksForUser = (userId: string, maxDuration?: numbe
       return unblockedTasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks', userId, 'wheel', maxDuration?.toString() ?? 'all'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 /**
@@ -184,7 +184,7 @@ export const getAllTasksForUser = (userId: string) =>
       return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks', userId, 'all'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 /**
@@ -206,7 +206,7 @@ export const getPotentialParentTasks = (userId: string) =>
       return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks', userId, 'potential-parents'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 /**
@@ -226,7 +226,7 @@ export const getTaskByIdForUser = (taskId: string, userId: string) =>
       return toTaskDetailDTO(task, userId)
     },
     ['tasks', userId, 'detail', taskId],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )()
 
 // ============================================
@@ -311,7 +311,7 @@ const fetchTasksForUser = (userId: string) =>
       return dtos.filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks-legacy', userId],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )
 
 /**
@@ -346,7 +346,7 @@ const fetchTasksByStatus = (
       return dtos.filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks-legacy', userId, 'status', status],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )
 
 /**
@@ -379,7 +379,7 @@ const fetchCompletedTasks = (userId: string) =>
       return dtos.filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks-legacy', userId, 'completed'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )
 
 /**
@@ -430,7 +430,7 @@ const fetchWheelTasks = (userId: string, maxDuration?: number) =>
       return dtos.filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks-legacy', userId, 'wheel', maxDuration?.toString() ?? 'all'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )
 
 /**
@@ -460,7 +460,7 @@ const fetchActiveTask = (userId: string) =>
       return toTaskDTO(task, userId)
     },
     ['tasks-legacy', userId, 'active'],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )
 
 /**
@@ -493,7 +493,7 @@ const fetchTaskById = (userId: string, taskId: string) =>
       return toTaskDetailDTO(task, userId)
     },
     ['tasks-legacy', userId, 'detail', taskId],
-    { tags: ['tasks'], revalidate: 60 }
+    { tags: [`tasks:${userId}`], revalidate: 60 }
   )
 
 /**

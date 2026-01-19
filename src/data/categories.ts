@@ -24,7 +24,7 @@ export const getCategoriesForUser = (userId: string) =>
       return categories as CategoryDTO[]
     },
     ['categories', userId],
-    { tags: ['categories'], revalidate: 300 }
+    { tags: [`categories:${userId}`], revalidate: 300 }
   )()
 
 /**
@@ -48,7 +48,7 @@ export const getCategoriesWithCountsForUser = (userId: string) =>
       })) as CategoryWithCountDTO[]
     },
     ['categories', userId, 'counts'],
-    { tags: ['categories', 'tasks'], revalidate: 300 }
+    { tags: [`categories:${userId}`, `tasks:${userId}`], revalidate: 300 }
   )()
 
 // ============================================
@@ -69,7 +69,7 @@ const fetchCategoriesForUser = (userId: string) =>
       return categories.map(toCategoryDTO)
     },
     ['categories-legacy', userId],
-    { tags: ['categories'], revalidate: 60 }
+    { tags: [`categories:${userId}`], revalidate: 60 }
   )
 
 /**
@@ -103,7 +103,7 @@ const fetchCategoriesWithCounts = (userId: string) =>
       }))
     },
     ['categories-legacy', userId, 'counts'],
-    { tags: ['categories', 'tasks'], revalidate: 60 }
+    { tags: [`categories:${userId}`, `tasks:${userId}`], revalidate: 60 }
   )
 
 /**

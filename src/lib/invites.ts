@@ -1,5 +1,6 @@
 import 'server-only'
 import { randomBytes } from 'crypto'
+import { revalidateTag } from 'next/cache'
 import { db } from './db'
 import { createNotification } from './notifications'
 
@@ -173,6 +174,10 @@ export async function acceptInvite(token: string, userId: string) {
     message: `${acceptingUser?.name || acceptingUser?.email || 'Someone'} joined "${invite.task.title}"`,
     taskId: invite.task.id,
   })
+
+  // Invalidate caches for both users
+  revalidateTag(`tasks:${userId}`, 'max')  // New collaborator can now see the task
+  revalidateTag(`tasks:${invite.task.userId}`, 'max')  // Task owner sees updated collaborator count
 
   return { task: invite.task, alreadyCollaborator: false }
 }

@@ -99,7 +99,7 @@ export async function createTask(input: unknown): Promise<ActionResult<{ taskId:
     })
 
     // 7. Revalidate cache
-    revalidateTag('tasks', 'max')
+    revalidateTag(`tasks:${user.id}`, 'max')
 
     return { taskId: task.id }
   })
@@ -220,7 +220,7 @@ export async function updateTask(
       },
     })
 
-    revalidateTag('tasks', 'max')
+    revalidateTag(`tasks:${user.id}`, 'max')
 
     return { taskId: validatedId.data }
   })
@@ -295,7 +295,7 @@ export async function updateTaskStatus(input: unknown): Promise<ActionResult<{ s
       },
     })
 
-    revalidateTag('tasks', 'max')
+    revalidateTag(`tasks:${user.id}`, 'max')
 
     return { success: true }
   })
@@ -324,7 +324,7 @@ export async function deleteTask(taskId: unknown): Promise<ActionResult<{ succes
 
     await db.task.delete({ where: { id: validatedId.data } })
 
-    revalidateTag('tasks', 'max')
+    revalidateTag(`tasks:${user.id}`, 'max')
 
     return { success: true }
   })

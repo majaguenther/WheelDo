@@ -51,7 +51,7 @@ export async function createCategory(
       },
     })
 
-    revalidateTag('categories', 'max')
+    revalidateTag(`categories:${user.id}`, 'max')
 
     return { categoryId: category.id }
   })
@@ -105,7 +105,7 @@ export async function updateCategory(
       data: validated,
     })
 
-    revalidateTag('categories', 'max')
+    revalidateTag(`categories:${user.id}`, 'max')
 
     return { categoryId: validatedId.data }
   })
@@ -138,8 +138,8 @@ export async function deleteCategory(
 
     await db.category.delete({ where: { id: validatedId.data } })
 
-    revalidateTag('categories', 'max')
-    revalidateTag('tasks', 'max')
+    revalidateTag(`categories:${user.id}`, 'max')
+    revalidateTag(`tasks:${user.id}`, 'max')
 
     return { success: true }
   })

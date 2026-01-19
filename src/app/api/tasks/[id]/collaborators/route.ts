@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { db } from '@/lib/db'
@@ -139,6 +140,12 @@ export async function DELETE(
       })
     }
 
+    // Invalidate caches for affected users
+    revalidateTag(`tasks:${targetUserId}`, 'max')  // Removed collaborator
+    if (task) {
+      revalidateTag(`tasks:${task.userId}`, 'max')  // Task owner
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to remove collaborator:', error)
@@ -191,6 +198,9 @@ export async function PATCH(
         },
       },
     })
+
+    // Invalidate cache for the collaborator whose permissions changed
+    revalidateTag(`tasks:${targetUserId}`, 'max')
 
     return NextResponse.json(collaborator)
   } catch (error) {

@@ -3,7 +3,7 @@ import {auth} from '@/lib/auth'
 import {headers} from 'next/headers'
 import {isTaskOwnerById} from '@/data/tasks'
 import {createInvite, getTaskInvites, revokeInvite} from '@/lib/invites'
-import {rateLimiters} from '@/lib/rate-limit'
+import {rateLimiters, checkRateLimit} from '@/lib/rate-limit'
 
 export async function GET(
     request: NextRequest,
@@ -49,8 +49,8 @@ export async function POST(
             return NextResponse.json({error: 'Unauthorized'}, {status: 401})
         }
 
-        // Rate limit: 5 invites per minute
-        const rateLimitResult = rateLimiters.invites(session.user.id)
+        // Rate limit: 5 invites per minute (using Upstash Redis)
+        const rateLimitResult = await checkRateLimit(rateLimiters.invites, session.user.id)
         if (!rateLimitResult.success) {
             return NextResponse.json(
                 {error: 'Too many requests. Please try again later.'},
@@ -58,7 +58,7 @@ export async function POST(
                     status: 429,
                     headers: {
                         'X-RateLimit-Remaining': '0',
-                        'X-RateLimit-Reset': rateLimitResult.resetAt.toString(),
+                        'X-RateLimit-Reset': rateLimitResult.reset.toString(),
                     }
                 }
             )
