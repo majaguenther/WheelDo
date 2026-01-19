@@ -24,7 +24,15 @@ export async function GET(
         }
 
         const invites = await getTaskInvites(taskId, session.user.id)
-        return NextResponse.json(invites)
+
+        // Build URLs for each invite
+        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://wheel-do.vercel.app'
+        const invitesWithUrls = invites.map(invite => ({
+            ...invite,
+            url: `${baseUrl}/invite/${invite.token}`,
+        }))
+
+        return NextResponse.json(invitesWithUrls)
     } catch (error) {
         console.error('Failed to fetch invites:', error)
         return NextResponse.json({error: 'Failed to fetch invites'}, {status: 500})

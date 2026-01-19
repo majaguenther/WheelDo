@@ -20,7 +20,7 @@ export async function createInvite(
   taskId: string,
   canEdit: boolean,
   createdBy: string
-): Promise<{ id: string; token: string; expiresAt: Date }> {
+): Promise<{ id: string; token: string; canEdit: boolean; expiresAt: Date }> {
   // Check if task exists and user is owner
   const task = await db.task.findUnique({
     where: { id: taskId },
@@ -61,6 +61,7 @@ export async function createInvite(
   return {
     id: invite.id,
     token: invite.token,
+    canEdit: invite.canEdit,
     expiresAt: invite.expiresAt,
   }
 }
