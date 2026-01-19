@@ -99,22 +99,30 @@ export const getCompletedTasksForUser = (userId: string) =>
   )()
 
 /**
- * Get wheel-eligible tasks for a user (pending, within duration limit)
+ * Get wheel-eligible tasks for a user
+ * Eligible = PENDING + unblocked (no pending parent) + within duration
  */
 export const getWheelEligibleTasksForUser = (userId: string, maxDuration?: number) =>
   unstable_cache(
     async () => {
       const tasks = await db.task.findMany({
         where: {
-          OR: [{ userId }, { collaborators: { some: { userId } } }],
-          parentId: null,
-          status: 'PENDING',
-          ...(maxDuration && {
-            OR: [{ duration: null }, { duration: { lte: maxDuration } }],
-          }),
-          parent: {
-            OR: [{ status: { not: 'PENDING' } }, { id: undefined }],
-          },
+          AND: [
+            // 1. User owns or collaborates
+            {
+              OR: [{ userId }, { collaborators: { some: { userId } } }],
+            },
+            // 2. Must be PENDING
+            { status: 'PENDING' },
+            // 3. Unblocked: no parent OR parent is COMPLETED
+            {
+              OR: [{ parentId: null }, { parent: { status: 'COMPLETED' } }],
+            },
+            // 4. Duration filter (optional)
+            ...(maxDuration
+              ? [{ OR: [{ duration: null }, { duration: { lte: maxDuration } }] }]
+              : []),
+          ],
         },
         include: taskListInclude,
         orderBy: [{ urgency: 'desc' }, { deadline: 'asc' }],
@@ -316,15 +324,22 @@ const fetchWheelTasks = (userId: string, maxDuration?: number) =>
     async () => {
       const tasks = await db.task.findMany({
         where: {
-          OR: [{ userId }, { collaborators: { some: { userId } } }],
-          parentId: null,
-          status: 'PENDING',
-          ...(maxDuration && {
-            OR: [{ duration: null }, { duration: { lte: maxDuration } }],
-          }),
-          parent: {
-            OR: [{ status: { not: 'PENDING' } }, { id: undefined }],
-          },
+          AND: [
+            // 1. User owns or collaborates
+            {
+              OR: [{ userId }, { collaborators: { some: { userId } } }],
+            },
+            // 2. Must be PENDING
+            { status: 'PENDING' },
+            // 3. Unblocked: no parent OR parent is COMPLETED
+            {
+              OR: [{ parentId: null }, { parent: { status: 'COMPLETED' } }],
+            },
+            // 4. Duration filter (optional)
+            ...(maxDuration
+              ? [{ OR: [{ duration: null }, { duration: { lte: maxDuration } }] }]
+              : []),
+          ],
         },
         include: taskInclude,
         orderBy: [{ urgency: 'desc' }, { deadline: 'asc' }],

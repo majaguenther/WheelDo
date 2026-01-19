@@ -19,7 +19,7 @@ interface TaskListProps {
 export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress'>('all')
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine' | 'shared'>('all')
 
   // Memoize active task lookup
   const activeTask = useMemo(
@@ -33,15 +33,17 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
     [tasks, activeTaskId]
   )
 
-  // Memoize filtered tasks
+  // Memoize filtered tasks by ownership
   const filteredTasks = useMemo(() => {
     return otherTasks.filter((task) => {
-      if (filter === 'all') return task.status !== 'COMPLETED'
-      if (filter === 'pending') return task.status === 'PENDING'
-      if (filter === 'in_progress') return task.status === 'IN_PROGRESS'
+      // Always exclude completed tasks from the main list
+      if (task.status === 'COMPLETED') return false
+      // Apply ownership filter
+      if (ownershipFilter === 'mine') return task.role === 'owner'
+      if (ownershipFilter === 'shared') return task.role !== 'owner'
       return true
     })
-  }, [otherTasks, filter])
+  }, [otherTasks, ownershipFilter])
 
   // Memoize status change handler
   const handleStatusChange = useCallback(
@@ -109,13 +111,14 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
         </div>
       )}
 
-      {/* Filter tabs */}
+      {/* Ownership filter tabs */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" role="group" aria-label="Task ownership filter">
           <button
-            onClick={() => setFilter('all')}
+            onClick={() => setOwnershipFilter('all')}
+            aria-pressed={ownershipFilter === 'all'}
             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              filter === 'all'
+              ownershipFilter === 'all'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-secondary'
             }`}
@@ -123,14 +126,26 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
             All
           </button>
           <button
-            onClick={() => setFilter('pending')}
+            onClick={() => setOwnershipFilter('mine')}
+            aria-pressed={ownershipFilter === 'mine'}
             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              filter === 'pending'
+              ownershipFilter === 'mine'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-secondary'
             }`}
           >
-            Pending
+            My Tasks
+          </button>
+          <button
+            onClick={() => setOwnershipFilter('shared')}
+            aria-pressed={ownershipFilter === 'shared'}
+            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              ownershipFilter === 'shared'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-secondary'
+            }`}
+          >
+            Shared
           </button>
         </div>
         <Button variant="ghost" size="sm" className="gap-2">
