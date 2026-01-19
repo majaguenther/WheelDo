@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Clock,
   MapPin,
@@ -60,29 +60,48 @@ export function TaskCard({
   showChildren = true,
   isChild = false,
 }: TaskCardProps) {
+  const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(true)
   const hasChildren = task.children && task.children.length > 0
   const deadlineColor = getDeadlineColor(task.deadline)
   const isInProgress = task.status === 'IN_PROGRESS'
   const isCompleted = task.status === 'COMPLETED'
 
-  const handleStart = () => {
+  const handleCardClick = () => {
+    router.push(`/tasks/${task.id}`)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleCardClick()
+    }
+  }
+
+  const handleStart = (e: React.MouseEvent) => {
+    e.stopPropagation()
     onStatusChange?.(task.id, 'IN_PROGRESS')
   }
 
-  const handleDefer = () => {
+  const handleDefer = (e: React.MouseEvent) => {
+    e.stopPropagation()
     onStatusChange?.(task.id, 'PENDING')
   }
 
-  const handleComplete = () => {
+  const handleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation()
     onStatusChange?.(task.id, 'COMPLETED')
   }
 
   return (
     <div className={cn('space-y-2', isChild && 'ml-6 md:ml-8')}>
       <div
+        onClick={handleCardClick}
+        onKeyDown={handleKeyDown}
+        role="link"
+        tabIndex={0}
         className={cn(
-          'group relative rounded-lg border bg-card p-4 transition-shadow hover:shadow-md border-l-4',
+          'group relative rounded-lg border bg-card p-4 transition-shadow hover:shadow-md border-l-4 cursor-pointer',
           urgencyColors[task.urgency],
           isInProgress && 'ring-2 ring-primary ring-offset-2 bg-primary/5',
           isCompleted && 'opacity-60'
@@ -93,7 +112,10 @@ export function TaskCard({
           {/* Expand/collapse for children */}
           {hasChildren && showChildren && (
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsExpanded(!isExpanded)
+              }}
               className="mt-1 p-0.5 rounded hover:bg-secondary"
             >
               {isExpanded ? (
@@ -107,15 +129,14 @@ export function TaskCard({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href={`/tasks/${task.id}`}
+              <span
                 className={cn(
-                  'font-medium hover:text-primary transition-colors',
+                  'font-medium',
                   isCompleted && 'line-through'
                 )}
               >
                 {task.title}
-              </Link>
+              </span>
               {isInProgress && (
                 <Badge variant="default" className="gap-1">
                   <AlertCircle className="h-3 w-3" />

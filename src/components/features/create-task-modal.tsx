@@ -70,9 +70,13 @@ export function CreateTaskModal({
   const [location, setLocation] = useState('')
   const [urgency, setUrgency] = useState<Urgency>('MEDIUM')
   const [effort, setEffort] = useState<Effort>('MODERATE')
-  const [deadline, setDeadline] = useState('')
+  const [deadlineDate, setDeadlineDate] = useState('')
+  const [deadlineTime, setDeadlineTime] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [recurrence, setRecurrence] = useState<RecurrenceType>('NONE')
+
+  // Get today's date in YYYY-MM-DD format for min date validation
+  const today = new Date().toISOString().split('T')[0]
 
   const resetForm = () => {
     setTitle('')
@@ -81,7 +85,8 @@ export function CreateTaskModal({
     setLocation('')
     setUrgency('MEDIUM')
     setEffort('MODERATE')
-    setDeadline('')
+    setDeadlineDate('')
+    setDeadlineTime('')
     setCategoryId('')
     setRecurrence('NONE')
     setShowAdvanced(false)
@@ -91,6 +96,14 @@ export function CreateTaskModal({
     e.preventDefault()
 
     if (!title.trim()) return
+
+    // Combine date and time into ISO string
+    let deadline: string | undefined
+    if (deadlineDate) {
+      // If time is provided, use it; otherwise default to end of day (23:59)
+      const timeStr = deadlineTime || '23:59'
+      deadline = new Date(`${deadlineDate}T${timeStr}`).toISOString()
+    }
 
     startTransition(async () => {
       try {
@@ -104,7 +117,7 @@ export function CreateTaskModal({
             location: location || undefined,
             urgency,
             effort,
-            deadline: deadline ? new Date(deadline).toISOString() : undefined,
+            deadline,
             categoryId: categoryId || undefined,
             recurrenceType: recurrence,
             parentId,
@@ -266,16 +279,40 @@ export function CreateTaskModal({
           <div className="space-y-4 pt-2 border-t">
             {/* Deadline */}
             <div className="space-y-2">
-              <Label htmlFor="deadline" className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
                 Deadline
               </Label>
-              <Input
-                id="deadline"
-                type="datetime-local"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Label htmlFor="deadlineDate" className="sr-only">
+                    Date
+                  </Label>
+                  <Input
+                    id="deadlineDate"
+                    type="date"
+                    value={deadlineDate}
+                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    min={today}
+                    className="w-full"
+                  />
+                </div>
+                <div className="w-28">
+                  <Label htmlFor="deadlineTime" className="sr-only">
+                    Time (optional)
+                  </Label>
+                  <Input
+                    id="deadlineTime"
+                    type="time"
+                    value={deadlineTime}
+                    onChange={(e) => setDeadlineTime(e.target.value)}
+                    placeholder="Time"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Time is optional. Defaults to end of day if not set.
+              </p>
             </div>
 
             {/* Recurrence */}

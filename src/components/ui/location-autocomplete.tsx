@@ -172,15 +172,17 @@ export function LocationAutocomplete({
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           placeholder={placeholder}
-          className="pl-9 pr-9"
+          className="pl-9 pr-10 appearance-none"
+          style={{ WebkitAppearance: 'none' }}
         />
         {isLoading ? (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin z-10" />
         ) : inputValue ? (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-secondary"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-secondary z-10 touch-manipulation"
+            aria-label="Clear location"
           >
             <X className="h-4 w-4 text-muted-foreground" />
           </button>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import confetti from 'canvas-confetti'
+import { Triangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { Task, Category } from '@/generated/prisma/client'
@@ -184,9 +185,12 @@ export function SpinWheel({ tasks, onTaskSelected }: SpinWheelProps) {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Pointer */}
-      <div className="relative">
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[25px] border-t-primary z-10" />
+      {/* Pointer arrow */}
+      <div className="relative overflow-visible">
+        <Triangle
+          className="absolute -top-6 left-1/2 -translate-x-1/2 h-8 w-8 text-primary fill-primary rotate-180 z-10 drop-shadow-md"
+          aria-hidden="true"
+        />
 
         {/* Wheel */}
         <div className={cn('relative', isSpinning && 'cursor-not-allowed')}>
