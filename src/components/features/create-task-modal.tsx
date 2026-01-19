@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ChevronDown,
@@ -23,15 +23,18 @@ import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { DurationPicker } from '@/components/ui/duration-picker'
 import { UrgencySelector } from '@/components/ui/urgency-selector'
 import { EffortSelector } from '@/components/ui/effort-selector'
+import { ParentTaskSelector } from './parent-task-selector'
 import { createTask } from '@/actions/tasks'
 import type { CategoryDTO } from '@/data/dto/category.types'
+import type { TaskDTO } from '@/data/dto/task.types'
 import type { Urgency, Effort, RecurrenceType } from '@/generated/prisma/client'
 
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
   categories: CategoryDTO[]
-  parentId?: string
+  availableTasks?: TaskDTO[] // Tasks available for parent selection
+  parentId?: string // Pre-selected parent (when creating subtask from detail page)
 }
 
 const recurrenceOptions: { value: RecurrenceType; label: string }[] = [
@@ -46,7 +49,8 @@ export function CreateTaskModal({
   isOpen,
   onClose,
   categories,
-  parentId,
+  availableTasks = [],
+  parentId: initialParentId,
 }: CreateTaskModalProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -64,6 +68,15 @@ export function CreateTaskModal({
   const [deadlineTime, setDeadlineTime] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [recurrence, setRecurrence] = useState<RecurrenceType>('NONE')
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(initialParentId || null)
+
+  // Update parentId when initialParentId prop changes
+  useEffect(() => {
+    setSelectedParentId(initialParentId || null)
+  }, [initialParentId])
+
+  // Determine if task is a subtask (has parent)
+  const isSubtask = !!selectedParentId
 
   // Get today's date in YYYY-MM-DD format for min date validation
   const today = new Date().toISOString().split('T')[0]
@@ -79,6 +92,7 @@ export function CreateTaskModal({
     setDeadlineTime('')
     setCategoryId('')
     setRecurrence('NONE')
+    setSelectedParentId(initialParentId || null)
     setShowAdvanced(false)
     setError(null)
   }
@@ -106,7 +120,9 @@ export function CreateTaskModal({
         effort,
         deadline,
         categoryId: categoryId || undefined,
-        parentId,
+        parentId: selectedParentId || undefined,
+        // Subtasks cannot have recurrence
+        recurrenceType: isSubtask ? 'NONE' : recurrence,
       })
 
       if (result.success) {
@@ -123,8 +139,8 @@ export function CreateTaskModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={parentId ? 'Add Subtask' : 'Create New Task'}
-      description="Add a new task to your list. You can only work on one task at a time."
+      title={isSubtask ? 'Add Subtask' : 'Create New Task'}
+      description={isSubtask ? 'Create a subtask for the selected parent task.' : 'Add a new task to your list. You can only work on one task at a time.'}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -177,6 +193,17 @@ export function CreateTaskModal({
             ))}
           </Select>
         </div>
+
+        {/* Parent task selector - only show if we have tasks available */}
+        {availableTasks.length > 0 && (
+          <div className="space-y-2 pt-2 border-t">
+            <ParentTaskSelector
+              tasks={availableTasks}
+              selectedParentId={selectedParentId}
+              onSelect={setSelectedParentId}
+            />
+          </div>
+        )}
 
         {/* Duration */}
         <div className="space-y-2">
@@ -260,7 +287,7 @@ export function CreateTaskModal({
               </p>
             </div>
 
-            {/* Recurrence */}
+            {/* Recurrence - disabled for subtasks */}
             <div className="space-y-2">
               <Label htmlFor="recurrence" className="flex items-center gap-1.5">
                 <Repeat className="h-3.5 w-3.5" />
@@ -268,8 +295,9 @@ export function CreateTaskModal({
               </Label>
               <Select
                 id="recurrence"
-                value={recurrence}
+                value={isSubtask ? 'NONE' : recurrence}
                 onChange={(e) => setRecurrence(e.target.value as RecurrenceType)}
+                disabled={isSubtask}
               >
                 {recurrenceOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -277,6 +305,11 @@ export function CreateTaskModal({
                   </option>
                 ))}
               </Select>
+              {isSubtask && (
+                <p className="text-xs text-muted-foreground">
+                  Subtasks cannot have recurrence enabled.
+                </p>
+              )}
             </div>
 
             {/* Location */}

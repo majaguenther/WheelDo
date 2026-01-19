@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { CircleDot } from 'lucide-react'
 import { getCurrentUser } from '@/data/auth'
-import { getTasksForUser, getActiveTaskForUser } from '@/data/tasks'
+import { getAllTasksForUser, getActiveTaskForUser, getPotentialParentTasks } from '@/data/tasks'
 import { getCategoriesForUser } from '@/data/categories'
 import { TaskList } from '@/components/features/task-list'
 import { DashboardSkeleton } from '@/components/skeletons'
@@ -16,10 +16,11 @@ async function DashboardContent() {
   if (!user) return null
 
   // ALL data fetched in parallel - no sequential blocking
-  const [tasks, activeTask, categories] = await Promise.all([
-    getTasksForUser(user.id),
+  const [tasks, activeTask, categories, potentialParents] = await Promise.all([
+    getAllTasksForUser(user.id),
     getActiveTaskForUser(user.id),
     getCategoriesForUser(user.id),
+    getPotentialParentTasks(user.id),
   ])
 
   // Filter to show only pending and in-progress tasks
@@ -39,7 +40,7 @@ async function DashboardContent() {
               : 'Pick a task to start working on.'}
           </p>
         </div>
-        <CreateTaskButton categories={categories} />
+        <CreateTaskButton categories={categories} availableTasks={potentialParents} />
       </div>
 
       {/* Quick actions */}

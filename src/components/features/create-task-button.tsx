@@ -5,12 +5,14 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CreateTaskModal } from './create-task-modal'
 import type { CategoryDTO } from '@/data/dto/category.types'
+import type { TaskDTO } from '@/data/dto/task.types'
 
 interface CreateTaskButtonProps {
   categories: CategoryDTO[]
+  availableTasks?: TaskDTO[]
 }
 
-export function CreateTaskButton({ categories }: CreateTaskButtonProps) {
+export function CreateTaskButton({ categories, availableTasks = [] }: CreateTaskButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -23,6 +25,7 @@ export function CreateTaskButton({ categories }: CreateTaskButtonProps) {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         categories={categories}
+        availableTasks={availableTasks}
       />
     </>
   )

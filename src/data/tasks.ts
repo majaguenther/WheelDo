@@ -3,7 +3,33 @@ import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentUser } from './auth'
-import { toTaskDTO, toTaskDetailDTO, type TaskDTO, type TaskDetailDTO } from './dto/task.dto'
+import { toTaskDTO, toTaskDetailDTO, type TaskDTO, type TaskDetailDTO, type ChildTaskDTO } from './dto/task.dto'
+
+// ============================================
+// Helper functions for parent/child dependencies
+// ============================================
+
+/**
+ * Check if a task is blocked (has incomplete children)
+ * A parent task is blocked until ALL children are completed
+ */
+export function isTaskBlocked(task: TaskDTO): boolean {
+  if (!task.children || task.children.length === 0) return false
+  return task.children.some((child) => child.status !== 'COMPLETED')
+}
+
+/**
+ * Get completion progress for a parent task
+ * Returns completed count, total count, and percentage
+ */
+export function getTaskProgress(task: TaskDTO): { completed: number; total: number; percent: number } {
+  if (!task.children || task.children.length === 0) {
+    return { completed: 0, total: 0, percent: 100 }
+  }
+  const completed = task.children.filter((c) => c.status === 'COMPLETED').length
+  const total = task.children.length
+  return { completed, total, percent: Math.round((completed / total) * 100) }
+}
 
 /**
  * Lightweight include for list views - no full collaborator join, just counts
@@ -100,7 +126,8 @@ export const getCompletedTasksForUser = (userId: string) =>
 
 /**
  * Get wheel-eligible tasks for a user
- * Eligible = PENDING + unblocked (no pending parent) + within duration
+ * Eligible = PENDING + unblocked (no incomplete children) + within duration
+ * Note: Parents with incomplete children are blocked and should NOT appear on wheel
  */
 export const getWheelEligibleTasksForUser = (userId: string, maxDuration?: number) =>
   unstable_cache(
@@ -114,11 +141,7 @@ export const getWheelEligibleTasksForUser = (userId: string, maxDuration?: numbe
             },
             // 2. Must be PENDING
             { status: 'PENDING' },
-            // 3. Unblocked: no parent OR parent is COMPLETED
-            {
-              OR: [{ parentId: null }, { parent: { status: 'COMPLETED' } }],
-            },
-            // 4. Duration filter (optional)
+            // 3. Duration filter (optional)
             ...(maxDuration
               ? [{ OR: [{ duration: null }, { duration: { lte: maxDuration } }] }]
               : []),
@@ -127,9 +150,62 @@ export const getWheelEligibleTasksForUser = (userId: string, maxDuration?: numbe
         include: taskListInclude,
         orderBy: [{ urgency: 'desc' }, { deadline: 'asc' }],
       })
-      return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
+
+      // Filter out blocked parents (tasks with incomplete children)
+      const unblockedTasks = tasks.filter((task) => {
+        // If task has children, all must be COMPLETED for it to be eligible
+        if (task.children && task.children.length > 0) {
+          return task.children.every((c) => c.status === 'COMPLETED')
+        }
+        return true
+      })
+
+      return unblockedTasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks', userId, 'wheel', maxDuration?.toString() ?? 'all'],
+    { tags: ['tasks'], revalidate: 60 }
+  )()
+
+/**
+ * Get all tasks for a user including children (for flat list view)
+ * Unlike getTasksForUser, this does NOT filter out children
+ */
+export const getAllTasksForUser = (userId: string) =>
+  unstable_cache(
+    async () => {
+      const tasks = await db.task.findMany({
+        where: {
+          OR: [{ userId }, { collaborators: { some: { userId } } }],
+          // NO parentId filter - get all tasks including children
+        },
+        include: taskListInclude,
+        orderBy: [{ status: 'asc' }, { urgency: 'desc' }, { deadline: 'asc' }, { position: 'asc' }],
+      })
+      return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
+    },
+    ['tasks', userId, 'all'],
+    { tags: ['tasks'], revalidate: 60 }
+  )()
+
+/**
+ * Get potential parent tasks for a user
+ * Only returns root-level tasks (no grandparenting allowed)
+ */
+export const getPotentialParentTasks = (userId: string) =>
+  unstable_cache(
+    async () => {
+      const tasks = await db.task.findMany({
+        where: {
+          OR: [{ userId }, { collaborators: { some: { userId, canEdit: true } } }],
+          parentId: null, // Only root-level tasks can be parents
+          status: { not: 'COMPLETED' }, // Don't show completed tasks as potential parents
+        },
+        include: taskListInclude,
+        orderBy: [{ urgency: 'desc' }, { deadline: 'asc' }, { title: 'asc' }],
+      })
+      return tasks.map((task) => toTaskDTOFromList(task, userId)).filter((dto): dto is TaskDTO => dto !== null)
+    },
+    ['tasks', userId, 'potential-parents'],
     { tags: ['tasks'], revalidate: 60 }
   )()
 
@@ -331,11 +407,7 @@ const fetchWheelTasks = (userId: string, maxDuration?: number) =>
             },
             // 2. Must be PENDING
             { status: 'PENDING' },
-            // 3. Unblocked: no parent OR parent is COMPLETED
-            {
-              OR: [{ parentId: null }, { parent: { status: 'COMPLETED' } }],
-            },
-            // 4. Duration filter (optional)
+            // 3. Duration filter (optional)
             ...(maxDuration
               ? [{ OR: [{ duration: null }, { duration: { lte: maxDuration } }] }]
               : []),
@@ -344,7 +416,17 @@ const fetchWheelTasks = (userId: string, maxDuration?: number) =>
         include: taskInclude,
         orderBy: [{ urgency: 'desc' }, { deadline: 'asc' }],
       })
-      const dtos = tasks.map((task) => toTaskDTO(task, userId))
+
+      // Filter out blocked parents (tasks with incomplete children)
+      const unblockedTasks = tasks.filter((task) => {
+        // If task has children, all must be COMPLETED for it to be eligible
+        if (task.children && task.children.length > 0) {
+          return task.children.every((c) => c.status === 'COMPLETED')
+        }
+        return true
+      })
+
+      const dtos = unblockedTasks.map((task) => toTaskDTO(task, userId))
       return dtos.filter((dto): dto is TaskDTO => dto !== null)
     },
     ['tasks-legacy', userId, 'wheel', maxDuration?.toString() ?? 'all'],

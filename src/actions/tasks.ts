@@ -38,7 +38,7 @@ export async function createTask(input: unknown): Promise<ActionResult<{ taskId:
 
     const validated = result.data
 
-    // 3. Verify parentId belongs to user (if provided)
+    // 3. Verify parentId belongs to user and validate hierarchy (if provided)
     if (validated.parentId) {
       const parentTask = await db.task.findFirst({
         where: {
@@ -48,9 +48,18 @@ export async function createTask(input: unknown): Promise<ActionResult<{ taskId:
             { collaborators: { some: { userId: user.id, canEdit: true } } },
           ],
         },
+        select: { parentId: true },
       })
       if (!parentTask) {
         throw new ActionError('FORBIDDEN', 'Invalid parent task')
+      }
+
+      // Prevent assigning a task that already has a parent (no multi-level nesting)
+      if (parentTask.parentId !== null) {
+        throw new ActionError(
+          'VALIDATION_ERROR',
+          'Cannot assign a subtask as a parent. Only root-level tasks can be parents.'
+        )
       }
     }
 
@@ -64,7 +73,15 @@ export async function createTask(input: unknown): Promise<ActionResult<{ taskId:
       }
     }
 
-    // 5. Create task
+    // 5. Block recurrence if being added as subtask
+    if (validated.parentId && validated.recurrenceType && validated.recurrenceType !== 'NONE') {
+      throw new ActionError(
+        'VALIDATION_ERROR',
+        'Subtasks cannot have recurrence enabled'
+      )
+    }
+
+    // 6. Create task
     const task = await db.task.create({
       data: {
         title: validated.title,
@@ -76,11 +93,12 @@ export async function createTask(input: unknown): Promise<ActionResult<{ taskId:
         deadline: validated.deadline ? new Date(validated.deadline) : null,
         categoryId: validated.categoryId,
         parentId: validated.parentId,
+        recurrenceType: validated.recurrenceType,
         userId: user.id,
       },
     })
 
-    // 6. Revalidate cache
+    // 7. Revalidate cache
     revalidateTag('tasks', 'max')
 
     return { taskId: task.id }
@@ -138,19 +156,58 @@ export async function updateTask(
       }
     }
 
-    // Verify parentId if provided
-    if (validated.parentId) {
-      const parentTask = await db.task.findFirst({
-        where: {
-          id: validated.parentId,
-          OR: [
-            { userId: user.id },
-            { collaborators: { some: { userId: user.id, canEdit: true } } },
-          ],
-        },
+    // If parentId is being set, validate strictly
+    if (validated.parentId !== undefined) {
+      if (validated.parentId === validatedId.data) {
+        throw new ActionError('VALIDATION_ERROR', 'Task cannot be its own parent')
+      }
+
+      if (validated.parentId !== null) {
+        const parentTask = await db.task.findFirst({
+          where: {
+            id: validated.parentId,
+            OR: [
+              { userId: user.id },
+              { collaborators: { some: { userId: user.id, canEdit: true } } },
+            ],
+          },
+          select: { parentId: true },
+        })
+        if (!parentTask) {
+          throw new ActionError('FORBIDDEN', 'Invalid parent task')
+        }
+
+        // Prevent assigning a task that already has a parent (no multi-level nesting)
+        if (parentTask.parentId !== null) {
+          throw new ActionError(
+            'VALIDATION_ERROR',
+            'Cannot assign a subtask as a parent. Only root-level tasks can be parents.'
+          )
+        }
+      }
+    }
+
+    // If recurrence is being set, check for children
+    if (validated.recurrenceType && validated.recurrenceType !== 'NONE') {
+      const taskWithChildren = await db.task.findUnique({
+        where: { id: validatedId.data },
+        select: { children: { select: { id: true } }, parentId: true },
       })
-      if (!parentTask) {
-        throw new ActionError('FORBIDDEN', 'Invalid parent task')
+
+      // Block recurrence on tasks with children
+      if (taskWithChildren?.children && taskWithChildren.children.length > 0) {
+        throw new ActionError(
+          'VALIDATION_ERROR',
+          'Tasks with subtasks cannot have recurrence enabled'
+        )
+      }
+
+      // Block recurrence if task has a parent (is a subtask)
+      if (taskWithChildren?.parentId !== null) {
+        throw new ActionError(
+          'VALIDATION_ERROR',
+          'Subtasks cannot have recurrence enabled'
+        )
       }
     }
 
@@ -190,6 +247,24 @@ export async function updateTaskStatus(input: unknown): Promise<ActionResult<{ s
     const canEdit = await canEditTask(taskId)
     if (!canEdit) {
       throw new ActionError('NOT_FOUND', 'Task not found or access denied')
+    }
+
+    // Block starting or completing tasks with incomplete children
+    if (status === 'IN_PROGRESS' || status === 'COMPLETED') {
+      const task = await db.task.findUnique({
+        where: { id: taskId },
+        include: { children: { select: { status: true } } },
+      })
+
+      if (task?.children && task.children.length > 0) {
+        const hasIncompleteChildren = task.children.some((c) => c.status !== 'COMPLETED')
+        if (hasIncompleteChildren) {
+          throw new ActionError(
+            'CONFLICT',
+            'Complete all subtasks first before starting or completing this task.'
+          )
+        }
+      }
     }
 
     // If starting a task, ensure no other task is in progress

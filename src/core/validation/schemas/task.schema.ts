@@ -16,6 +16,11 @@ export const urgencySchema = z.enum(['LOW', 'MEDIUM', 'HIGH'])
 export const taskStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'DEFERRED'])
 
 /**
+ * Recurrence type matching Prisma enum
+ */
+export const recurrenceTypeSchema = z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])
+
+/**
  * Create task input schema
  */
 export const createTaskSchema = z.object({
@@ -38,6 +43,7 @@ export const createTaskSchema = z.object({
   deadline: z.string().datetime({ message: 'Invalid deadline format' }).optional().nullable(),
   categoryId: z.string().cuid('Invalid category ID').optional().nullable(),
   parentId: z.string().cuid('Invalid parent task ID').optional().nullable(),
+  recurrenceType: recurrenceTypeSchema.default('NONE').optional(),
 })
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
@@ -66,6 +72,7 @@ export const updateTaskSchema = z.object({
   deadline: z.string().datetime({ message: 'Invalid deadline format' }).optional().nullable(),
   categoryId: z.string().cuid('Invalid category ID').optional().nullable(),
   parentId: z.string().cuid('Invalid parent task ID').optional().nullable(),
+  recurrenceType: recurrenceTypeSchema.optional(),
   status: taskStatusSchema.optional(),
   position: z.number().int().min(0).optional(),
 })

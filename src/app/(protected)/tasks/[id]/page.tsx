@@ -12,6 +12,8 @@ import {
   Repeat,
   FolderOpen,
   Users,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react'
 import { getCurrentUser } from '@/data/auth'
 import { getTaskByIdForUser } from '@/data/tasks'
@@ -21,6 +23,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { TaskActions } from '@/components/features/task-actions'
 import { Avatar } from '@/components/ui/avatar'
+import { SubtasksSection } from '@/components/features/subtasks-section'
+import { SubtaskProgressBadge } from '@/components/features/subtask-progress-badge'
 
 // Safely parse location - handles both JSON objects and plain text
 function parseLocation(location: string): string {
@@ -57,6 +61,16 @@ async function TaskContent({ params }: TaskPageProps) {
   const deadlineColor = getDeadlineColor(task.deadline)
   const isSharedTask = task.role !== 'owner'
 
+  // Check if task is blocked (has incomplete children)
+  const hasChildren = task.children && task.children.length > 0
+  const isBlocked = hasChildren && task.children.some((c) => c.status !== 'COMPLETED')
+  const subtaskProgress = hasChildren
+    ? {
+        completed: task.children.filter((c) => c.status === 'COMPLETED').length,
+        total: task.children.length,
+      }
+    : null
+
   const effortLabels = {
     MINIMAL: '1 - Minimal',
     LOW: '2 - Low',
@@ -92,6 +106,20 @@ async function TaskContent({ params }: TaskPageProps) {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2 flex-wrap">
           <h1 className="text-2xl font-bold">{task.title}</h1>
+          {/* Subtask progress badge */}
+          {subtaskProgress && (
+            <SubtaskProgressBadge
+              completed={subtaskProgress.completed}
+              total={subtaskProgress.total}
+            />
+          )}
+          {/* Blocked indicator */}
+          {isBlocked && task.status !== 'COMPLETED' && (
+            <Badge variant="secondary" className="gap-1 text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              Blocked
+            </Badge>
+          )}
           {task.status === 'IN_PROGRESS' && (
             <Badge variant="default">In Progress</Badge>
           )}
@@ -105,6 +133,16 @@ async function TaskContent({ params }: TaskPageProps) {
             </Badge>
           )}
         </div>
+
+        {/* Blocked warning */}
+        {isBlocked && task.status !== 'COMPLETED' && (
+          <div className="flex items-center gap-2 p-3 mb-3 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span className="text-sm">
+              Complete all subtasks before you can start or complete this task.
+            </span>
+          </div>
+        )}
 
         {/* Show owner for shared tasks */}
         {isSharedTask && task.owner && (
@@ -218,23 +256,14 @@ async function TaskContent({ params }: TaskPageProps) {
         </CardContent>
       </Card>
 
-      {/* Subtasks */}
-      {task.children && task.children.length > 0 && (
+      {/* Subtasks section - GitHub-style collapsible */}
+      {(hasChildren || task.role === 'owner') && (
         <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-3">Subtasks</h2>
-          <div className="space-y-2">
-            {task.children.map((child) => (
-              <Link
-                key={child.id}
-                href={`/tasks/${child.id}`}
-                className="block p-3 rounded-lg border hover:bg-secondary/50 transition-colors"
-              >
-                <p className={cn('font-medium', child.status === 'COMPLETED' && 'line-through text-muted-foreground')}>
-                  {child.title}
-                </p>
-              </Link>
-            ))}
-          </div>
+          <SubtasksSection
+            children={task.children || []}
+            parentId={task.id}
+            // TODO: Add onAddSubtask handler to open create modal with parentId
+          />
         </div>
       )}
 

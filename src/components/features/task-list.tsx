@@ -27,9 +27,10 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
     [tasks, activeTaskId]
   )
 
-  // Memoize other tasks filtering
+  // Memoize other tasks filtering - flat list (no tree structure)
+  // Children appear as regular cards alongside parents
   const otherTasks = useMemo(
-    () => tasks.filter((t) => t.id !== activeTaskId && t.parentId === null),
+    () => tasks.filter((t) => t.id !== activeTaskId),
     [tasks, activeTaskId]
   )
 

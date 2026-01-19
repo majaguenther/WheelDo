@@ -1,31 +1,29 @@
 'use client'
 
-import { useState, useMemo, memo } from 'react'
+import { useMemo, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Clock,
   MapPin,
   Calendar,
-  ChevronDown,
-  ChevronRight,
   Play,
   Pause,
   Check,
   Zap,
   AlertCircle,
   Users,
+  Lock,
 } from 'lucide-react'
 import { cn, formatDuration, formatRelativeTime, getDeadlineColor } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { TaskDTO, ChildTaskDTO } from '@/data/dto/task.types'
+import { SubtaskProgressBadge } from './subtask-progress-badge'
+import type { TaskDTO } from '@/data/dto/task.types'
 import type { Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
 
 interface TaskCardProps {
   task: TaskDTO
   onStatusChange?: (taskId: string, status: TaskStatus) => void
-  showChildren?: boolean
-  isChild?: boolean
 }
 
 const urgencyColors: Record<Urgency, string> = {
@@ -55,11 +53,8 @@ function parseLocation(location: string): string {
 export const TaskCard = memo(function TaskCard({
   task,
   onStatusChange,
-  showChildren = true,
-  isChild = false,
 }: TaskCardProps) {
   const router = useRouter()
-  const [isExpanded, setIsExpanded] = useState(true)
 
   const hasChildren = task.children && task.children.length > 0
   const deadlineColor = useMemo(
@@ -70,6 +65,20 @@ export const TaskCard = memo(function TaskCard({
   const isCompleted = task.status === 'COMPLETED'
   const canEdit = task.canEdit
   const isShared = task.role !== 'owner'
+
+  // Check if task is blocked (has incomplete children)
+  const isBlocked = useMemo(() => {
+    if (!task.children || task.children.length === 0) return false
+    return task.children.some((child) => child.status !== 'COMPLETED')
+  }, [task.children])
+
+  // Get subtask progress
+  const subtaskProgress = useMemo(() => {
+    if (!task.children || task.children.length === 0) return null
+    const completed = task.children.filter((c) => c.status === 'COMPLETED').length
+    const total = task.children.length
+    return { completed, total }
+  }, [task.children])
 
   const handleCardClick = () => {
     router.push(`/tasks/${task.id}`)
@@ -98,197 +107,170 @@ export const TaskCard = memo(function TaskCard({
   }
 
   return (
-    <div className={cn('space-y-2', isChild && 'ml-6 md:ml-8')}>
-      <div
-        onClick={handleCardClick}
-        onKeyDown={handleKeyDown}
-        role="link"
-        tabIndex={0}
-        className={cn(
-          'group relative rounded-lg border bg-card p-4 transition-shadow hover:shadow-md border-l-4 cursor-pointer',
-          urgencyColors[task.urgency],
-          isInProgress && 'ring-2 ring-primary ring-offset-2 bg-primary/5',
-          isCompleted && 'opacity-60'
-        )}
-      >
-        {/* Header */}
-        <div className="flex items-start gap-3">
-          {/* Expand/collapse for children */}
-          {hasChildren && showChildren && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setIsExpanded(!isExpanded)
-              }}
-              className="mt-1 p-0.5 rounded hover:bg-secondary"
+    <div
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+      role="link"
+      tabIndex={0}
+      className={cn(
+        'group relative rounded-lg border bg-card p-4 transition-shadow hover:shadow-md border-l-4 cursor-pointer',
+        urgencyColors[task.urgency],
+        isInProgress && 'ring-2 ring-primary ring-offset-2 bg-primary/5',
+        isCompleted && 'opacity-60',
+        isBlocked && !isCompleted && 'border-l-gray-400'
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start gap-3">
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={cn('font-medium', isCompleted && 'line-through')}
             >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </button>
-          )}
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className={cn('font-medium', isCompleted && 'line-through')}
+              {task.title}
+            </span>
+            {/* Subtask progress badge */}
+            {subtaskProgress && (
+              <SubtaskProgressBadge
+                completed={subtaskProgress.completed}
+                total={subtaskProgress.total}
+              />
+            )}
+            {/* Blocked indicator */}
+            {isBlocked && !isCompleted && (
+              <Badge variant="secondary" className="gap-1 text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                Blocked
+              </Badge>
+            )}
+            {isInProgress && (
+              <Badge variant="default" className="gap-1">
+                <AlertCircle className="h-3 w-3" />
+                In Progress
+              </Badge>
+            )}
+            {isShared && (
+              <Badge variant="secondary" className="gap-1">
+                <Users className="h-3 w-3" />
+                Shared
+              </Badge>
+            )}
+            {task.category && (
+              <Badge
+                variant="outline"
+                style={{
+                  borderColor: task.category.color,
+                  color: task.category.color,
+                }}
               >
-                {task.title}
-              </span>
-              {isInProgress && (
-                <Badge variant="default" className="gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  In Progress
-                </Badge>
-              )}
-              {isShared && (
-                <Badge variant="secondary" className="gap-1">
-                  <Users className="h-3 w-3" />
-                  Shared
-                </Badge>
-              )}
-              {task.category && (
-                <Badge
-                  variant="outline"
-                  style={{
-                    borderColor: task.category.color,
-                    color: task.category.color,
-                  }}
-                >
-                  {task.category.name}
-                </Badge>
-              )}
-            </div>
-
-            {/* Meta info */}
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
-              {/* Duration */}
-              {task.duration && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  {formatDuration(task.duration)}
-                </span>
-              )}
-
-              {/* Location */}
-              {task.location && (
-                <span className="flex items-center gap-1 truncate max-w-[150px]">
-                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">{parseLocation(task.location)}</span>
-                </span>
-              )}
-
-              {/* Deadline */}
-              {task.deadline && (
-                <span
-                  className={cn(
-                    'flex items-center gap-1 px-1.5 py-0.5 rounded',
-                    deadlineColor
-                  )}
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  {formatRelativeTime(new Date(task.deadline))}
-                </span>
-              )}
-
-              {/* Effort */}
-              <span className="flex items-center gap-0.5">
-                {Array.from({ length: effortIcons[task.effort].count }).map(
-                  (_, i) => (
-                    <Zap
-                      key={i}
-                      className="h-3 w-3 fill-current text-yellow-500"
-                    />
-                  )
-                )}
-              </span>
-
-              {/* Collaborator count */}
-              {task.collaboratorCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" />
-                  {task.collaboratorCount}
-                </span>
-              )}
-            </div>
-
-            {/* Body preview */}
-            {task.body && (
-              <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                {task.body}
-              </p>
+                {task.category.name}
+              </Badge>
             )}
           </div>
 
-          {/* Actions */}
-          {canEdit && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {!isCompleted && !isInProgress && (
+          {/* Meta info */}
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
+            {/* Duration */}
+            {task.duration && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {formatDuration(task.duration)}
+              </span>
+            )}
+
+            {/* Location */}
+            {task.location && (
+              <span className="flex items-center gap-1 truncate max-w-[150px]">
+                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">{parseLocation(task.location)}</span>
+              </span>
+            )}
+
+            {/* Deadline */}
+            {task.deadline && (
+              <span
+                className={cn(
+                  'flex items-center gap-1 px-1.5 py-0.5 rounded',
+                  deadlineColor
+                )}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                {formatRelativeTime(new Date(task.deadline))}
+              </span>
+            )}
+
+            {/* Effort */}
+            <span className="flex items-center gap-0.5">
+              {Array.from({ length: effortIcons[task.effort].count }).map(
+                (_, i) => (
+                  <Zap
+                    key={i}
+                    className="h-3 w-3 fill-current text-yellow-500"
+                  />
+                )
+              )}
+            </span>
+
+            {/* Collaborator count */}
+            {task.collaboratorCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" />
+                {task.collaboratorCount}
+              </span>
+            )}
+          </div>
+
+          {/* Body preview */}
+          {task.body && (
+            <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+              {task.body}
+            </p>
+          )}
+        </div>
+
+        {/* Actions */}
+        {canEdit && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {!isCompleted && !isInProgress && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleStart}
+                title={isBlocked ? 'Complete all subtasks first' : 'Start task'}
+                className="h-8 w-8"
+                disabled={isBlocked}
+              >
+                <Play className="h-4 w-4" />
+              </Button>
+            )}
+            {isInProgress && (
+              <>
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={handleStart}
-                  title="Start task"
+                  onClick={handleDefer}
+                  title="Defer task"
                   className="h-8 w-8"
                 >
-                  <Play className="h-4 w-4" />
+                  <Pause className="h-4 w-4" />
                 </Button>
-              )}
-              {isInProgress && (
-                <>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handleDefer}
-                    title="Defer task"
-                    className="h-8 w-8"
-                  >
-                    <Pause className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="default"
-                    onClick={handleComplete}
-                    title="Complete task"
-                    className="h-8 w-8"
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                <Button
+                  size="icon"
+                  variant="default"
+                  onClick={handleComplete}
+                  title={isBlocked ? 'Complete all subtasks first' : 'Complete task'}
+                  className="h-8 w-8"
+                  disabled={isBlocked}
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Children - Note: Children in TaskDTO are ChildTaskDTO which have limited fields */}
-      {hasChildren && showChildren && isExpanded && (
-        <div className="space-y-2 ml-6 md:ml-8">
-          {task.children.map((child: ChildTaskDTO) => (
-            <div
-              key={child.id}
-              onClick={() => router.push(`/tasks/${child.id}`)}
-              className={cn(
-                'p-3 rounded-lg border bg-card cursor-pointer hover:shadow-sm transition-shadow border-l-4',
-                urgencyColors[child.urgency],
-                child.status === 'COMPLETED' && 'opacity-60'
-              )}
-            >
-              <span
-                className={cn(
-                  'text-sm font-medium',
-                  child.status === 'COMPLETED' && 'line-through'
-                )}
-              >
-                {child.title}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 })
