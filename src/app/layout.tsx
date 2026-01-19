@@ -4,6 +4,7 @@ import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import { getThemeScript, isValidThemeId } from '@/lib/themes'
+import { getBaseUrl } from '@/lib/url'
 import type { ThemeId } from '@/types/theme'
 import './globals.css'
 
@@ -18,9 +19,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://wheel-do.vercel.app/'
-  ),
+  metadataBase: new URL(getBaseUrl()),
   title: {
     default: 'WheelDo - Focus on One Task at a Time',
     template: '%s | WheelDo',

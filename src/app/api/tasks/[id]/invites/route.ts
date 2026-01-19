@@ -4,6 +4,7 @@ import {headers} from 'next/headers'
 import {isTaskOwnerById} from '@/data/tasks'
 import {createInvite, getTaskInvites, revokeInvite} from '@/lib/invites'
 import {rateLimiters, checkRateLimit} from '@/lib/rate-limit'
+import {getBaseUrl} from '@/lib/url'
 
 export async function GET(
     request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
         const invites = await getTaskInvites(taskId, session.user.id)
 
         // Build URLs for each invite
-        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://wheel-do.vercel.app'
+        const baseUrl = request.headers.get('origin') || getBaseUrl()
         const invitesWithUrls = invites.map(invite => ({
             ...invite,
             url: `${baseUrl}/invite/${invite.token}`,
@@ -76,7 +77,7 @@ export async function POST(
         const invite = await createInvite(taskId, canEdit, session.user.id)
 
         // Build the full invite URL
-        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://wheel-do.vercel.app'
+        const baseUrl = request.headers.get('origin') || getBaseUrl()
         const inviteUrl = `${baseUrl}/invite/${invite.token}`
 
         return NextResponse.json({

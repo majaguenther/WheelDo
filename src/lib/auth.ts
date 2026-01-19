@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { passkey } from "@better-auth/passkey"
 import { db } from "./db"
+import { getBaseUrl, getRpId } from "./url"
 
 // Default categories to create for new users
 const DEFAULT_CATEGORIES = [
@@ -11,28 +12,6 @@ const DEFAULT_CATEGORIES = [
   { name: 'Finance', color: '#eab308', icon: 'wallet' },
   { name: 'Home', color: '#f97316', icon: 'home' },
 ]
-
-// Get the app URL for passkey configuration
-const getAppUrl = () => {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  return 'http://localhost:3000'
-}
-
-// Get the RP ID (domain without protocol/port)
-const getRpId = () => {
-  const url = getAppUrl()
-  try {
-    const parsed = new URL(url)
-    return parsed.hostname
-  } catch {
-    return 'localhost'
-  }
-}
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
@@ -52,12 +31,13 @@ export const auth = betterAuth({
     passkey({
       rpID: getRpId(),
       rpName: 'WheelDo',
-      origin: getAppUrl(),
+      origin: getBaseUrl(),
     }),
   ],
   trustedOrigins: [
     'http://localhost:3000',
     process.env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined,
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
   ].filter(Boolean) as string[],
   databaseHooks: {
