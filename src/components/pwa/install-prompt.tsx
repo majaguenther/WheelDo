@@ -76,8 +76,8 @@ export function InstallPrompt() {
   // iOS-specific install instructions
   if (isIOS) {
     return (
-      <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-300 md:bottom-4">
-        <div className="rounded-xl border border-border bg-card p-4 shadow-lg">
+      <div className="fixed bottom-[5.5rem] left-4 right-4 z-[60] mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-300 md:bottom-4 md:left-auto md:right-4">
+        <div className="rounded-xl border border-border bg-card/95 backdrop-blur-sm p-4 shadow-xl">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Smartphone className="h-5 w-5 text-primary" />
@@ -144,8 +144,8 @@ export function InstallPrompt() {
 
   // Standard install prompt for other browsers
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-300 md:bottom-4 md:left-auto md:right-4">
-      <div className="rounded-xl border border-border bg-card p-4 shadow-lg">
+    <div className="fixed bottom-[5.5rem] left-4 right-4 z-[60] mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-300 md:bottom-4 md:left-auto md:right-4">
+      <div className="rounded-xl border border-border bg-card/95 backdrop-blur-sm p-4 shadow-xl">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
             <Smartphone className="h-5 w-5 text-primary" />
