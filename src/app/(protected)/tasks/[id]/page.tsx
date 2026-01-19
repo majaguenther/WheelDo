@@ -16,12 +16,13 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { getCurrentUser } from '@/data/auth'
-import { getTaskByIdForUser } from '@/data/tasks'
+import { getTaskByIdForUser, getPotentialParentTasks } from '@/data/tasks'
+import { getCategoriesForUser } from '@/data/categories'
 import { formatDuration, formatRelativeTime, getDeadlineColor, cn } from '@/lib/utils'
 import { TaskDetailSkeleton } from '@/components/skeletons'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { TaskActions } from '@/components/features/task-actions'
+import { TaskActionsWithEdit } from '@/components/features/task-actions-with-edit'
 import { Avatar } from '@/components/ui/avatar'
 import { SubtasksSection } from '@/components/features/subtasks-section'
 import { SubtaskProgressBadge } from '@/components/features/subtask-progress-badge'
@@ -52,7 +53,13 @@ async function TaskContent({ params }: TaskPageProps) {
   if (!user) return null
 
   const { id } = await params
-  const task = await getTaskByIdForUser(id, user.id)
+
+  // Fetch task, categories, and potential parent tasks in parallel
+  const [task, categories, potentialParents] = await Promise.all([
+    getTaskByIdForUser(id, user.id),
+    getCategoriesForUser(user.id),
+    getPotentialParentTasks(user.id),
+  ])
 
   if (!task) {
     notFound()
@@ -160,7 +167,12 @@ async function TaskContent({ params }: TaskPageProps) {
       </div>
 
       {/* Task actions */}
-      <TaskActions task={task} role={task.role} />
+      <TaskActionsWithEdit
+        task={task}
+        role={task.role}
+        categories={categories}
+        availableTasks={potentialParents}
+      />
 
       {/* Task details */}
       <Card className="mt-6">

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Play, Pause, Check, Trash2, Users } from 'lucide-react'
+import { Play, Pause, Check, Trash2, Users, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ShareTaskModal } from './share-task-modal'
 import { startTask, completeTask, deferTask, revertTask, deleteTask as deleteTaskAction } from '@/actions/tasks'
@@ -15,9 +15,10 @@ interface TaskActionsProps {
     status: TaskStatus
   }
   role?: 'owner' | 'editor' | 'viewer'
+  onEditClick?: () => void
 }
 
-export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
+export function TaskActions({ task, role = 'owner', onEditClick }: TaskActionsProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showShareModal, setShowShareModal] = useState(false)
@@ -81,6 +82,14 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
   return (
     <>
       <div className={`flex flex-wrap gap-3 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}>
+        {/* Edit button - visible for owner/editor, hidden for completed tasks */}
+        {canEdit && !isCompleted && onEditClick && (
+          <Button onClick={onEditClick} variant="outline" className="gap-2">
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
+        )}
+
         {canEdit && !isCompleted && !isInProgress && (
           <Button onClick={() => handleUpdateStatus('IN_PROGRESS')} className="gap-2">
             <Play className="h-4 w-4" />
