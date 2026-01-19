@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
@@ -15,6 +15,10 @@ import {
   Eye,
   Loader2
 } from 'lucide-react'
+import {
+  updateCollaboratorPermission,
+  removeCollaborator as removeCollaboratorAction,
+} from '@/actions/collaborators'
 
 interface Collaborator {
   id: string
@@ -62,6 +66,9 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
   const [newInviteCanEdit, setNewInviteCanEdit] = useState(false)
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
+  const [removingUserId, setRemovingUserId] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -138,35 +145,39 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
   }
 
   const removeCollaborator = async (userId: string) => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/collaborators`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      })
+    setRemovingUserId(userId)
+    setError(null)
 
-      if (!res.ok) throw new Error('Failed to remove collaborator')
-      setCollaborators(collaborators.filter((c) => c.userId !== userId))
-    } catch {
-      setError('Failed to remove collaborator')
-    }
+    startTransition(async () => {
+      const result = await removeCollaboratorAction(taskId, userId)
+
+      if (result.success) {
+        setCollaborators(collaborators.filter((c) => c.userId !== userId))
+      } else {
+        setError(result.error.message || 'Failed to remove collaborator')
+      }
+
+      setRemovingUserId(null)
+    })
   }
 
   const updateCollaboratorRole = async (userId: string, canEdit: boolean) => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/collaborators`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, canEdit }),
-      })
+    setUpdatingUserId(userId)
+    setError(null)
 
-      if (!res.ok) throw new Error('Failed to update role')
-      setCollaborators(collaborators.map((c) =>
-        c.userId === userId ? { ...c, canEdit } : c
-      ))
-    } catch {
-      setError('Failed to update role')
-    }
+    startTransition(async () => {
+      const result = await updateCollaboratorPermission(taskId, userId, canEdit)
+
+      if (result.success) {
+        setCollaborators(collaborators.map((c) =>
+          c.userId === userId ? { ...c, canEdit: result.data.collaborator.canEdit } : c
+        ))
+      } else {
+        setError(result.error.message || 'Failed to update role')
+      }
+
+      setUpdatingUserId(null)
+    })
   }
 
   const copyToClipboard = async (url: string, inviteId: string) => {
@@ -236,57 +247,81 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
               )}
 
               {/* Collaborators */}
-              {collaborators.map((collab) => (
-                <div key={collab.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50">
-                  <Avatar user={collab.user} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {collab.user.name || collab.user.email}
-                    </p>
-                    {collab.user.name && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {collab.user.email}
+              {collaborators.map((collab) => {
+                const isUpdating = updatingUserId === collab.userId
+                const isRemoving = removingUserId === collab.userId
+                const isOperating = isUpdating || isRemoving
+
+                return (
+                  <div
+                    key={collab.id}
+                    className={`flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 ${
+                      isOperating ? 'opacity-70' : ''
+                    }`}
+                  >
+                    <Avatar user={collab.user} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {collab.user.name || collab.user.email}
                       </p>
-                    )}
+                      {collab.user.name && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {collab.user.email}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isOwner ? (
+                        <div className="relative">
+                          <select
+                            value={collab.canEdit ? 'editor' : 'viewer'}
+                            onChange={(e) => updateCollaboratorRole(collab.userId, e.target.value === 'editor')}
+                            disabled={isOperating || isPending}
+                            className={`text-sm bg-transparent border rounded px-2 py-1 ${
+                              isUpdating ? 'opacity-50' : ''
+                            } disabled:cursor-not-allowed`}
+                          >
+                            <option value="viewer">Viewer</option>
+                            <option value="editor">Editor</option>
+                          </select>
+                          {isUpdating && (
+                            <Loader2 className="absolute right-6 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          {collab.canEdit ? (
+                            <>
+                              <Pencil className="h-3 w-3" />
+                              Editor
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-3 w-3" />
+                              Viewer
+                            </>
+                          )}
+                        </Badge>
+                      )}
+                      {isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeCollaborator(collab.userId)}
+                          disabled={isOperating || isPending}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive disabled:cursor-not-allowed"
+                        >
+                          {isRemoving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {isOwner ? (
-                      <select
-                        value={collab.canEdit ? 'editor' : 'viewer'}
-                        onChange={(e) => updateCollaboratorRole(collab.userId, e.target.value === 'editor')}
-                        className="text-sm bg-transparent border rounded px-2 py-1"
-                      >
-                        <option value="viewer">Viewer</option>
-                        <option value="editor">Editor</option>
-                      </select>
-                    ) : (
-                      <Badge variant="outline" className="gap-1">
-                        {collab.canEdit ? (
-                          <>
-                            <Pencil className="h-3 w-3" />
-                            Editor
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="h-3 w-3" />
-                            Viewer
-                          </>
-                        )}
-                      </Badge>
-                    )}
-                    {isOwner && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeCollaborator(collab.userId)}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
 
               {collaborators.length === 0 && (
                 <p className="text-sm text-muted-foreground py-2">
