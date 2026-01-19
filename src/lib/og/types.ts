@@ -9,4 +9,6 @@ export type InviteOGData = {
   inviterImage: string | null
   canEdit: boolean
   expired: boolean
+  category: { name: string; color: string } | null
+  deadline: Date | null
 }

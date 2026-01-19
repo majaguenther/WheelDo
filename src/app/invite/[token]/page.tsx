@@ -18,12 +18,19 @@ export async function generateMetadata({
 
     if (!invite || invite.expired) {
         return {
-            title: 'Invalid Invite',
+            title: 'Invite Not Available - WheelDo',
+            description: 'This invite link is no longer valid. It may have expired or been revoked. Request a new invite from the task owner.',
         }
     }
 
-    const title = `Join "${invite.taskTitle}"`
-    const description = `${invite.inviterName} invited you to collaborate`
+    // Truncate task title if too long for metadata
+    const truncatedTitle = invite.taskTitle.length > 35
+        ? invite.taskTitle.substring(0, 32) + '...'
+        : invite.taskTitle
+
+    // Optimal: title 50-60 chars, description 110-160 chars
+    const title = `You're invited to collaborate on "${truncatedTitle}" - WheelDo`
+    const description = `${invite.inviterName} has invited you to ${invite.canEdit ? 'edit' : 'view'} their task "${invite.taskTitle}" on WheelDo. Join now to start collaborating on this task together.`
 
     return {
         title,
@@ -32,12 +39,13 @@ export async function generateMetadata({
             title,
             description,
             type: 'website',
+            siteName: 'WheelDo',
             images: [
                 {
                     url: `/invite/${token}/opengraph-image`,
                     width: 1200,
                     height: 630,
-                    alt: `Invitation to collaborate on ${invite.taskTitle}`,
+                    alt: `Invitation from ${invite.inviterName} to collaborate on "${invite.taskTitle}"`,
                 },
             ],
         },

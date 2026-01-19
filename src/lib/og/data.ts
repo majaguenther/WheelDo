@@ -14,6 +14,13 @@ export async function getInviteForOG(token: string): Promise<InviteOGData | null
         task: {
           select: {
             title: true,
+            deadline: true,
+            category: {
+              select: {
+                name: true,
+                color: true,
+              },
+            },
           },
         },
         creator: {
@@ -40,6 +47,8 @@ export async function getInviteForOG(token: string): Promise<InviteOGData | null
       inviterImage: avatarBase64, // Now base64 or null
       canEdit: invite.canEdit,
       expired,
+      category: invite.task.category,
+      deadline: invite.task.deadline,
     }
   } catch (error) {
     console.error('Failed to fetch invite for OG:', error)

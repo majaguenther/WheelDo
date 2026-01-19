@@ -11,9 +11,9 @@ export function WheelDoLogo({ size = 48 }: { size?: number }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke={OG_COLORS.primary}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
     >
       <circle cx="12" cy="12" r="10" />
       <circle cx="12" cy="12" r="1" />
@@ -206,31 +206,39 @@ export function PermissionBadge({ canEdit }: { canEdit: boolean }) {
         border: `1px solid ${color}40`,
       }}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width={20}
-        height={20}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {canEdit ? (
-          // Pencil icon for edit
-          <>
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-            <path d="m15 5 4 4" />
-          </>
-        ) : (
-          // Eye icon for view
-          <>
-            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-            <circle cx="12" cy="12" r="3" />
-          </>
-        )}
-      </svg>
+      {canEdit ? (
+        // Pencil icon for edit
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={20}
+          height={20}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={color}
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+          <path d="m15 5 4 4" />
+        </svg>
+      ) : (
+        // Eye icon for view
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={20}
+          height={20}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={color}
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
       <span
         style={{
           fontSize: 18,
@@ -244,13 +252,79 @@ export function PermissionBadge({ canEdit }: { canEdit: boolean }) {
   )
 }
 
+// Get deadline urgency color
+export function getDeadlineColor(deadline: Date): string {
+  const now = new Date()
+  const hoursUntil = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+  if (hoursUntil < 24) return '#cf222e' // Red - urgent
+  if (hoursUntil < 72) return '#bf8700' // Orange - soon
+  return '#656d76' // Gray - normal
+}
+
 // Format deadline for display
-export function formatDeadline(date: Date): string {
-  return date.toLocaleDateString('en-US', {
+export function formatDeadline(deadline: Date): string {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const deadlineYear = deadline.getFullYear()
+
+  if (currentYear === deadlineYear) {
+    return deadline.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  return deadline.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+// Deadline badge with urgency color
+export function DeadlineBadge({ deadline }: { deadline: Date }) {
+  const color = getDeadlineColor(deadline)
+  const formattedDate = formatDeadline(deadline)
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 16px',
+        backgroundColor: `${color}15`,
+        borderRadius: 9999,
+        border: `1px solid ${color}30`,
+      }}
+    >
+      {/* Clock icon */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={16}
+        height={16}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={color}
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+      <span
+        style={{
+          fontSize: 16,
+          fontWeight: 500,
+          color: color,
+        }}
+      >
+        Due {formattedDate}
+      </span>
+    </div>
+  )
 }
 
 // Collaborator avatars with overflow indicator
