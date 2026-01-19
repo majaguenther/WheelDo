@@ -186,6 +186,9 @@ model Task {
   @@index([userId, status])
   @@index([userId, deadline])
   @@index([parentId])
+  @@index([categoryId])      // Optimize category filtering
+  @@index([createdAt])       // Optimize date sorting
+  @@index([status, urgency]) // Optimize priority sorting
 }
 
 model TaskCollaborator {

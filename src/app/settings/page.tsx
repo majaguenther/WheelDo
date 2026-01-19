@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
 import { User, Palette, FolderOpen, Shield } from 'lucide-react'
-import { getSession } from '@/lib/auth-server'
-import { getCategories } from '@/lib/tasks'
+import { getCurrentUser } from '@/data/auth'
+import { getCategories } from '@/data/categories'
 import { LoadingPage } from '@/components/ui/loading'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { CategoryManager } from '@/components/features/category-manager'
@@ -15,12 +15,7 @@ export const metadata = {
 }
 
 async function SettingsContent() {
-  const [session, categories] = await Promise.all([
-    getSession(),
-    getCategories(),
-  ])
-
-  const user = session?.user
+  const [user, categories] = await Promise.all([getCurrentUser(), getCategories()])
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-2xl mx-auto">
@@ -108,9 +103,7 @@ async function SettingsContent() {
         {/* App info */}
         <div className="text-center text-sm text-muted-foreground pt-4">
           <p>WheelDo v0.1.0</p>
-          <p className="mt-1">
-            Made with love for focused productivity
-          </p>
+          <p className="mt-1">Made with love for focused productivity</p>
         </div>
       </div>
     </div>

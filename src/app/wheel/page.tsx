@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Clock, AlertCircle } from 'lucide-react'
-import { getTasksForWheel, getActiveTask } from '@/lib/tasks'
+import { getWheelEligibleTasks, getActiveTask } from '@/data/tasks'
 import { SpinWheel } from '@/components/features/spin-wheel'
 import { LoadingPage } from '@/components/ui/loading'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -19,7 +19,7 @@ async function WheelContent({ searchParams }: WheelPageProps) {
   const maxDuration = params.maxDuration ? parseInt(params.maxDuration, 10) : undefined
 
   const [tasks, activeTask] = await Promise.all([
-    getTasksForWheel(maxDuration),
+    getWheelEligibleTasks(maxDuration),
     getActiveTask(),
   ])
 
@@ -29,9 +29,7 @@ async function WheelContent({ searchParams }: WheelPageProps) {
       <div className="p-4 md:p-6 lg:p-8 max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-2">Spin the Wheel</h1>
-          <p className="text-muted-foreground">
-            You already have an active task!
-          </p>
+          <p className="text-muted-foreground">You already have an active task!</p>
         </div>
 
         <div className="p-6 rounded-lg border bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
@@ -42,8 +40,8 @@ async function WheelContent({ searchParams }: WheelPageProps) {
                 Task in Progress
               </h3>
               <p className="text-yellow-700 dark:text-yellow-300 mt-1">
-                You&apos;re currently working on &quot;{activeTask.title}&quot;.
-                Complete or defer it before spinning the wheel.
+                You&apos;re currently working on &quot;{activeTask.title}&quot;. Complete or defer
+                it before spinning the wheel.
               </p>
               <a
                 href="/dashboard"

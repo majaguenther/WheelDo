@@ -21,13 +21,15 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { LocationAutocomplete } from '@/components/ui/location-autocomplete'
 import { DurationPicker } from '@/components/ui/duration-picker'
+import { createTask } from '@/actions/tasks'
 import { cn } from '@/lib/utils'
-import type { Category, Urgency, Effort, RecurrenceType } from '@/generated/prisma/client'
+import type { CategoryDTO } from '@/data/dto/category.dto'
+import type { Urgency, Effort, RecurrenceType } from '@/generated/prisma/client'
 
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  categories: Category[]
+  categories: CategoryDTO[]
   parentId?: string
 }
 
@@ -62,6 +64,7 @@ export function CreateTaskModal({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Form state
   const [title, setTitle] = useState('')
@@ -90,6 +93,7 @@ export function CreateTaskModal({
     setCategoryId('')
     setRecurrence('NONE')
     setShowAdvanced(false)
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,31 +110,24 @@ export function CreateTaskModal({
     }
 
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: title.trim(),
-            body: body.trim() || undefined,
-            duration: duration ?? undefined,
-            location: location || undefined,
-            urgency,
-            effort,
-            deadline,
-            categoryId: categoryId || undefined,
-            recurrenceType: recurrence,
-            parentId,
-          }),
-        })
+      const result = await createTask({
+        title: title.trim(),
+        body: body.trim() || undefined,
+        duration: duration ?? undefined,
+        location: location || undefined,
+        urgency,
+        effort,
+        deadline,
+        categoryId: categoryId || undefined,
+        parentId,
+      })
 
-        if (!res.ok) throw new Error('Failed to create task')
-
+      if (result.success) {
         resetForm()
         onClose()
         router.refresh()
-      } catch (error) {
-        console.error('Failed to create task:', error)
+      } else {
+        setError(result.error.message)
       }
     })
   }
@@ -143,6 +140,12 @@ export function CreateTaskModal({
       description="Add a new task to your list. You can only work on one task at a time."
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
+            {error}
+          </div>
+        )}
+
         {/* Title */}
         <div className="space-y-2">
           <Label htmlFor="title">Title *</Label>

@@ -6,31 +6,12 @@ import { TaskCard } from './task-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { ListTodo, Plus, Filter } from 'lucide-react'
-import type { Task, Category, TaskStatus } from '@/generated/prisma/client'
-
-interface CollaboratorUser {
-  id: string
-  name: string | null
-  email: string
-  image: string | null
-}
-
-interface Collaborator {
-  id: string
-  userId: string
-  canEdit: boolean
-  user: CollaboratorUser
-}
+import { updateTaskStatus } from '@/actions/tasks'
+import type { TaskDTO } from '@/data/dto/task.dto'
+import type { TaskStatus } from '@/generated/prisma/client'
 
 interface TaskListProps {
-  tasks: (Task & {
-    category: Category | null
-    children: (Task & { category: Category | null; children: Task[] })[]
-    collaborators?: Collaborator[]
-    user?: CollaboratorUser
-    role?: 'owner' | 'editor' | 'viewer'
-    isShared?: boolean
-  })[]
+  tasks: TaskDTO[]
   activeTaskId?: string | null
   onCreateTask?: () => void
 }
@@ -54,19 +35,14 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${taskId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
-        })
+      const result = await updateTaskStatus({ taskId, status })
 
-        if (!res.ok) throw new Error('Failed to update task')
-
-        router.refresh()
-      } catch (error) {
-        console.error('Failed to update task:', error)
+      if (!result.success) {
+        console.error('Failed to update task:', result.error.message)
+        // Could show a toast notification here
       }
+
+      router.refresh()
     })
   }
 
@@ -99,8 +75,6 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
           <TaskCard
             task={activeTask}
             onStatusChange={handleStatusChange}
-            role={activeTask.role}
-            isShared={activeTask.isShared}
           />
         </div>
       )}
@@ -142,8 +116,6 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
             key={task.id}
             task={task}
             onStatusChange={handleStatusChange}
-            role={task.role}
-            isShared={task.isShared}
           />
         ))}
       </div>

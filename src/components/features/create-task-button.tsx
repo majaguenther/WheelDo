@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CreateTaskModal } from './create-task-modal'
-import type { Category } from '@/generated/prisma/client'
+import type { CategoryDTO } from '@/data/dto/category.dto'
 
 interface CreateTaskButtonProps {
-  categories: Category[]
+  categories: CategoryDTO[]
 }
 
 export function CreateTaskButton({ categories }: CreateTaskButtonProps) {

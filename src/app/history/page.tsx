@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
-import { History as HistoryIcon, RotateCcw, Calendar, Search } from 'lucide-react'
-import { getCompletedTasks } from '@/lib/tasks'
+import { History as HistoryIcon } from 'lucide-react'
+import { getCompletedTasks } from '@/data/tasks'
 import { LoadingPage } from '@/components/ui/loading'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/ui/badge'
@@ -19,9 +19,7 @@ async function HistoryContent() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Completion History</h1>
-          <p className="text-muted-foreground text-sm">
-            View all your completed tasks
-          </p>
+          <p className="text-muted-foreground text-sm">View all your completed tasks</p>
         </div>
         <Badge variant="secondary" className="gap-1.5">
           <HistoryIcon className="h-3.5 w-3.5" />

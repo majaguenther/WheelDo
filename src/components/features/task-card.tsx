@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Clock,
@@ -18,40 +18,14 @@ import {
 import { cn, formatDuration, formatRelativeTime, getDeadlineColor } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AvatarStack } from '@/components/ui/avatar-stack'
-import type { Task, Category, Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
-
-interface Collaborator {
-  id: string
-  userId: string
-  canEdit: boolean
-  user: {
-    id: string
-    name: string | null
-    email: string
-    image: string | null
-  }
-}
-
-interface TaskOwner {
-  id: string
-  name: string | null
-  email: string
-  image: string | null
-}
+import type { TaskDTO, ChildTaskDTO } from '@/data/dto/task.dto'
+import type { Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
 
 interface TaskCardProps {
-  task: Task & {
-    category: Category | null
-    children: Task[]
-    collaborators?: Collaborator[]
-    user?: TaskOwner
-  }
+  task: TaskDTO
   onStatusChange?: (taskId: string, status: TaskStatus) => void
   showChildren?: boolean
   isChild?: boolean
-  role?: 'owner' | 'editor' | 'viewer'
-  isShared?: boolean
 }
 
 const urgencyColors: Record<Urgency, string> = {
@@ -74,7 +48,6 @@ function parseLocation(location: string): string {
     const parsed = JSON.parse(location)
     return parsed.formatted?.split(',')[0] || parsed.name || location
   } catch {
-    // If JSON parsing fails, treat it as plain text
     return location
   }
 }
@@ -84,22 +57,19 @@ export function TaskCard({
   onStatusChange,
   showChildren = true,
   isChild = false,
-  role = 'owner',
-  isShared = false,
 }: TaskCardProps) {
   const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(true)
+
   const hasChildren = task.children && task.children.length > 0
-  const deadlineColor = getDeadlineColor(task.deadline)
+  const deadlineColor = useMemo(
+    () => getDeadlineColor(task.deadline),
+    [task.deadline]
+  )
   const isInProgress = task.status === 'IN_PROGRESS'
   const isCompleted = task.status === 'COMPLETED'
-  const canEdit = role === 'owner' || role === 'editor'
-
-  // Collect all users for avatar stack (owner + collaborators)
-  const allUsers = [
-    ...(task.user ? [task.user] : []),
-    ...(task.collaborators?.map((c) => c.user) || []),
-  ].filter((u, i, arr) => arr.findIndex((u2) => u2.id === u.id) === i)
+  const canEdit = task.canEdit
+  const isShared = task.role !== 'owner'
 
   const handleCardClick = () => {
     router.push(`/tasks/${task.id}`)
@@ -164,10 +134,7 @@ export function TaskCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span
-                className={cn(
-                  'font-medium',
-                  isCompleted && 'line-through'
-                )}
+                className={cn('font-medium', isCompleted && 'line-through')}
               >
                 {task.title}
               </span>
@@ -177,7 +144,7 @@ export function TaskCard({
                   In Progress
                 </Badge>
               )}
-              {isShared && role !== 'owner' && (
+              {isShared && (
                 <Badge variant="secondary" className="gap-1">
                   <Users className="h-3 w-3" />
                   Shared
@@ -186,7 +153,10 @@ export function TaskCard({
               {task.category && (
                 <Badge
                   variant="outline"
-                  style={{ borderColor: task.category.color, color: task.category.color }}
+                  style={{
+                    borderColor: task.category.color,
+                    color: task.category.color,
+                  }}
                 >
                   {task.category.name}
                 </Badge>
@@ -207,9 +177,7 @@ export function TaskCard({
               {task.location && (
                 <span className="flex items-center gap-1 truncate max-w-[150px]">
                   <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">
-                    {parseLocation(task.location)}
-                  </span>
+                  <span className="truncate">{parseLocation(task.location)}</span>
                 </span>
               )}
 
@@ -228,13 +196,23 @@ export function TaskCard({
 
               {/* Effort */}
               <span className="flex items-center gap-0.5">
-                {Array.from({ length: effortIcons[task.effort].count }).map((_, i) => (
-                  <Zap
-                    key={i}
-                    className="h-3 w-3 fill-current text-yellow-500"
-                  />
-                ))}
+                {Array.from({ length: effortIcons[task.effort].count }).map(
+                  (_, i) => (
+                    <Zap
+                      key={i}
+                      className="h-3 w-3 fill-current text-yellow-500"
+                    />
+                  )
+                )}
               </span>
+
+              {/* Collaborator count */}
+              {task.collaboratorCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {task.collaboratorCount}
+                </span>
+              )}
             </div>
 
             {/* Body preview */}
@@ -244,13 +222,6 @@ export function TaskCard({
               </p>
             )}
           </div>
-
-          {/* Avatar stack for collaborators */}
-          {allUsers.length > 1 && (
-            <div className="flex-shrink-0">
-              <AvatarStack users={allUsers} max={3} size="sm" />
-            </div>
-          )}
 
           {/* Actions */}
           {canEdit && (
@@ -293,17 +264,28 @@ export function TaskCard({
         </div>
       </div>
 
-      {/* Children */}
+      {/* Children - Note: Children in TaskDTO are ChildTaskDTO which have limited fields */}
       {hasChildren && showChildren && isExpanded && (
-        <div className="space-y-2">
-          {task.children.map((child) => (
-            <TaskCard
+        <div className="space-y-2 ml-6 md:ml-8">
+          {task.children.map((child: ChildTaskDTO) => (
+            <div
               key={child.id}
-              task={child as Task & { category: Category | null; children: Task[] }}
-              onStatusChange={onStatusChange}
-              showChildren={false}
-              isChild
-            />
+              onClick={() => router.push(`/tasks/${child.id}`)}
+              className={cn(
+                'p-3 rounded-lg border bg-card cursor-pointer hover:shadow-sm transition-shadow border-l-4',
+                urgencyColors[child.urgency],
+                child.status === 'COMPLETED' && 'opacity-60'
+              )}
+            >
+              <span
+                className={cn(
+                  'text-sm font-medium',
+                  child.status === 'COMPLETED' && 'line-through'
+                )}
+              >
+                {child.title}
+              </span>
+            </div>
           ))}
         </div>
       )}

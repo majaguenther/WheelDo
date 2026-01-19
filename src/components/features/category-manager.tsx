@@ -2,15 +2,16 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Pencil } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Label } from '@/components/ui/label'
-import type { Category } from '@/generated/prisma/client'
+import { createCategory, deleteCategory } from '@/actions/categories'
+import type { CategoryDTO } from '@/data/dto/category.dto'
 
 interface CategoryManagerProps {
-  categories: Category[]
+  categories: CategoryDTO[]
 }
 
 const DEFAULT_COLORS = [
@@ -25,29 +26,26 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0])
+  const [error, setError] = useState<string | null>(null)
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return
 
+    setError(null)
+
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newCategoryName.trim(),
-            color: newCategoryColor,
-          }),
-        })
+      const result = await createCategory({
+        name: newCategoryName.trim(),
+        color: newCategoryColor,
+      })
 
-        if (!res.ok) throw new Error('Failed to create category')
-
+      if (result.success) {
         setNewCategoryName('')
         setNewCategoryColor(DEFAULT_COLORS[0])
         setIsAddModalOpen(false)
         router.refresh()
-      } catch (error) {
-        console.error('Failed to create category:', error)
+      } else {
+        setError(result.error.message)
       }
     })
   }
@@ -58,16 +56,12 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
     }
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/categories/${id}`, {
-          method: 'DELETE',
-        })
+      const result = await deleteCategory(id)
 
-        if (!res.ok) throw new Error('Failed to delete category')
-
+      if (result.success) {
         router.refresh()
-      } catch (error) {
-        console.error('Failed to delete category:', error)
+      } else {
+        console.error('Failed to delete category:', result.error.message)
       }
     })
   }
@@ -113,11 +107,20 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
       {/* Add modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false)
+          setError(null)
+        }}
         title="Add Category"
         description="Create a new category to organize your tasks"
       >
         <div className="space-y-4">
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="category-name">Name</Label>
             <Input
@@ -151,8 +154,11 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddCategory} disabled={!newCategoryName.trim()}>
-              Add Category
+            <Button
+              onClick={handleAddCategory}
+              disabled={!newCategoryName.trim() || isPending}
+            >
+              {isPending ? 'Adding...' : 'Add Category'}
             </Button>
           </div>
         </div>

@@ -1,137 +1,120 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { Bell, Check, CheckCheck, Users, UserPlus, UserMinus, PartyPopper } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
+import { useNotificationStore } from '@/stores/notification.store'
+import { useClickOutside } from '@/hooks/use-click-outside'
+import { useEscapeKey } from '@/hooks/use-escape-key'
+import { usePolling } from '@/hooks/use-polling'
+import { markNotificationRead, markAllNotificationsRead } from '@/actions/notifications'
 
-interface Notification {
-  id: string
-  type: 'TASK_SHARED' | 'COLLABORATOR_JOINED' | 'COLLABORATOR_LEFT' | 'TASK_COMPLETED'
-  title: string
-  message: string
-  read: boolean
-  createdAt: string
-  task?: {
+interface NotificationResponse {
+  notifications: Array<{
     id: string
+    type: 'TASK_SHARED' | 'COLLABORATOR_JOINED' | 'COLLABORATOR_LEFT' | 'TASK_COMPLETED'
     title: string
-  } | null
+    message: string
+    read: boolean
+    createdAt: string
+    task?: { id: string; title: string } | null
+  }>
+  unreadCount: number
 }
 
 export function NotificationBell() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const triggerRef = useRef<HTMLButtonElement>(null)
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isDropdownOpen,
+    setNotifications,
+    setUnreadCount,
+    setIsLoading,
+    toggleDropdown,
+    closeDropdown,
+    markAsRead,
+    markAllAsRead: markAllInStore,
+  } = useNotificationStore()
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await fetch('/api/notifications?limit=10')
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(data.notifications || [])
-        setUnreadCount(data.unreadCount || 0)
-      }
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err)
-    }
+  // Click outside to close
+  const dropdownRef = useClickOutside<HTMLDivElement>(closeDropdown, isDropdownOpen)
+
+  // Escape key to close
+  useEscapeKey(closeDropdown, isDropdownOpen)
+
+  // Fetcher for notifications
+  const fetchNotifications = useCallback(async (): Promise<NotificationResponse> => {
+    const res = await fetch('/api/notifications?limit=10')
+    if (!res.ok) throw new Error('Failed to fetch')
+    return res.json()
   }, [])
 
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const res = await fetch('/api/notifications?countOnly=true')
-      if (res.ok) {
-        const data = await res.json()
-        setUnreadCount(data.count || 0)
-      }
-    } catch (err) {
-      console.error('Failed to fetch notification count:', err)
-    }
+  // Fetcher for unread count only
+  const fetchUnreadCount = useCallback(async (): Promise<{ count: number }> => {
+    const res = await fetch('/api/notifications?countOnly=true')
+    if (!res.ok) throw new Error('Failed to fetch')
+    return res.json()
   }, [])
 
   // Poll for unread count every 30 seconds
+  const { data: countData } = usePolling(fetchUnreadCount, {
+    interval: 30000,
+    pauseOnHidden: true,
+    immediate: true,
+  })
+
+  // Update store when count data changes
   useEffect(() => {
-    fetchUnreadCount()
-    const interval = setInterval(fetchUnreadCount, 30000)
-    return () => clearInterval(interval)
-  }, [fetchUnreadCount])
+    if (countData?.count !== undefined) {
+      setUnreadCount(countData.count)
+    }
+  }, [countData, setUnreadCount])
 
   // Fetch full notifications when dropdown opens
   useEffect(() => {
-    if (isOpen) {
-      setLoading(true)
-      fetchNotifications().finally(() => setLoading(false))
+    if (isDropdownOpen) {
+      setIsLoading(true)
+      fetchNotifications()
+        .then((data) => {
+          setNotifications(data.notifications.map((n) => ({
+            ...n,
+            taskId: n.task?.id ?? null,
+            taskTitle: n.task?.title ?? null,
+            createdAt: new Date(n.createdAt),
+          })))
+        })
+        .catch((err) => console.error('Failed to fetch notifications:', err))
+        .finally(() => setIsLoading(false))
     }
-  }, [isOpen, fetchNotifications])
+  }, [isDropdownOpen, fetchNotifications, setNotifications, setIsLoading])
 
-  // Close on click outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        menuRef.current &&
-        triggerRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !triggerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false)
-      }
-    }
+  const handleMarkAsRead = async (notificationId: string) => {
+    // Optimistic update
+    markAsRead(notificationId)
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen])
-
-  // Close on Escape key
-  useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false)
-        triggerRef.current?.focus()
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
-    }
-  }, [isOpen])
-
-  const markAsRead = async (ids: string[]) => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids }),
-      })
-      setNotifications(notifications.map((n) =>
-        ids.includes(n.id) ? { ...n, read: true } : n
-      ))
-      setUnreadCount(Math.max(0, unreadCount - ids.length))
-    } catch (err) {
-      console.error('Failed to mark as read:', err)
+    // Server update
+    const result = await markNotificationRead(notificationId)
+    if (!result.success) {
+      // Revert on error (in a real app, you'd refetch)
+      console.error('Failed to mark as read:', result.error)
     }
   }
 
-  const markAllAsRead = async () => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAll: true }),
-      })
-      setNotifications(notifications.map((n) => ({ ...n, read: true })))
-      setUnreadCount(0)
-    } catch (err) {
-      console.error('Failed to mark all as read:', err)
+  const handleMarkAllAsRead = async () => {
+    // Optimistic update
+    markAllInStore()
+
+    // Server update
+    const result = await markAllNotificationsRead()
+    if (!result.success) {
+      console.error('Failed to mark all as read:', result.error)
     }
   }
 
-  const getIcon = (type: Notification['type']) => {
+  const getIcon = (type: 'TASK_SHARED' | 'COLLABORATOR_JOINED' | 'COLLABORATOR_LEFT' | 'TASK_COMPLETED') => {
     switch (type) {
       case 'TASK_SHARED':
         return <Users className="h-4 w-4 text-blue-500" />
@@ -150,8 +133,7 @@ export function NotificationBell() {
     <div className="relative">
       {/* Bell icon trigger */}
       <button
-        ref={triggerRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
         className="relative p-2 rounded-lg hover:bg-secondary transition-colors"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
@@ -164,9 +146,9 @@ export function NotificationBell() {
       </button>
 
       {/* Dropdown */}
-      {isOpen && (
+      {isDropdownOpen && (
         <div
-          ref={menuRef}
+          ref={dropdownRef}
           className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-auto bg-background border rounded-lg shadow-lg z-50"
         >
           {/* Header */}
@@ -174,7 +156,7 @@ export function NotificationBell() {
             <h3 className="font-semibold">Notifications</h3>
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
+                onClick={handleMarkAllAsRead}
                 className="text-xs text-primary hover:underline flex items-center gap-1"
               >
                 <CheckCheck className="h-3 w-3" />
@@ -185,7 +167,7 @@ export function NotificationBell() {
 
           {/* Notification list */}
           <div className="divide-y">
-            {loading ? (
+            {isLoading ? (
               <div className="px-4 py-8 text-center text-muted-foreground text-sm">
                 Loading...
               </div>
@@ -211,7 +193,7 @@ export function NotificationBell() {
                         <p className="text-sm font-medium">{notification.title}</p>
                         {!notification.read && (
                           <button
-                            onClick={() => markAsRead([notification.id])}
+                            onClick={() => handleMarkAsRead(notification.id)}
                             className="flex-shrink-0 p-1 hover:bg-secondary rounded"
                             title="Mark as read"
                           >
@@ -224,16 +206,16 @@ export function NotificationBell() {
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">
-                          {formatRelativeTime(new Date(notification.createdAt))}
+                          {formatRelativeTime(notification.createdAt)}
                         </span>
-                        {notification.task && (
+                        {notification.taskId && (
                           <Link
-                            href={`/tasks/${notification.task.id}`}
+                            href={`/tasks/${notification.taskId}`}
                             onClick={() => {
                               if (!notification.read) {
-                                markAsRead([notification.id])
+                                handleMarkAsRead(notification.id)
                               }
-                              setIsOpen(false)
+                              closeDropdown()
                             }}
                             className="text-xs text-primary hover:underline"
                           >

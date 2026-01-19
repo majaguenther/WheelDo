@@ -6,11 +6,12 @@ import confetti from 'canvas-confetti'
 import { Triangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { Task, Category } from '@/generated/prisma/client'
+import { startTask } from '@/actions/tasks'
+import type { TaskDTO } from '@/data/dto/task.dto'
 
 interface SpinWheelProps {
-  tasks: (Task & { category: Category | null })[]
-  onTaskSelected?: (task: Task & { category: Category | null }) => void
+  tasks: TaskDTO[]
+  onTaskSelected?: (task: TaskDTO) => void
 }
 
 const COLORS = [
@@ -31,8 +32,7 @@ export function SpinWheel({ tasks, onTaskSelected }: SpinWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
-  const [selectedTask, setSelectedTask] = useState<(Task & { category: Category | null }) | null>(null)
-  const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskDTO | null>(null)
 
   const segmentAngle = 360 / tasks.length
 
@@ -164,22 +164,15 @@ export function SpinWheel({ tasks, onTaskSelected }: SpinWheelProps) {
     requestAnimationFrame(animate)
   }
 
-  const startSelectedTask = async () => {
+  const handleStartTask = async () => {
     if (!selectedTask) return
 
-    try {
-      const res = await fetch(`/api/tasks/${selectedTask.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'IN_PROGRESS' }),
-      })
-
-      if (!res.ok) throw new Error('Failed to start task')
-
+    const result = await startTask(selectedTask.id)
+    if (result.success) {
       router.push('/dashboard')
       router.refresh()
-    } catch (error) {
-      console.error('Failed to start task:', error)
+    } else {
+      console.error('Failed to start task:', result.error.message)
     }
   }
 
@@ -237,7 +230,7 @@ export function SpinWheel({ tasks, onTaskSelected }: SpinWheelProps) {
             >
               Spin Again
             </Button>
-            <Button className="flex-1" onClick={startSelectedTask}>
+            <Button className="flex-1" onClick={handleStartTask}>
               Start Task
             </Button>
           </div>

@@ -7,10 +7,11 @@ import { cn, formatDuration } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Task, Category } from '@/generated/prisma/client'
+import { revertTask, deleteTask } from '@/actions/tasks'
+import type { TaskDTO } from '@/data/dto/task.dto'
 
 interface HistoryListProps {
-  tasks: (Task & { category: Category | null })[]
+  tasks: TaskDTO[]
 }
 
 export function HistoryList({ tasks }: HistoryListProps) {
@@ -39,23 +40,15 @@ export function HistoryList({ tasks }: HistoryListProps) {
     }
     groups[date].push(task)
     return groups
-  }, {} as Record<string, (Task & { category: Category | null })[]>)
+  }, {} as Record<string, TaskDTO[]>)
 
   const handleRevert = async (taskId: string) => {
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${taskId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'PENDING' }),
-        })
-
-        if (!res.ok) throw new Error('Failed to revert task')
-
-        router.refresh()
-      } catch (error) {
-        console.error('Failed to revert task:', error)
+      const result = await revertTask(taskId)
+      if (!result.success) {
+        console.error('Failed to revert task:', result.error.message)
       }
+      router.refresh()
     })
   }
 
@@ -65,17 +58,11 @@ export function HistoryList({ tasks }: HistoryListProps) {
     }
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${taskId}`, {
-          method: 'DELETE',
-        })
-
-        if (!res.ok) throw new Error('Failed to delete task')
-
-        router.refresh()
-      } catch (error) {
-        console.error('Failed to delete task:', error)
+      const result = await deleteTask(taskId)
+      if (!result.success) {
+        console.error('Failed to delete task:', result.error.message)
       }
+      router.refresh()
     })
   }
 
