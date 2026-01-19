@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getSession } from '@/lib/auth-server'
 import { validateInvite } from '@/lib/invites'
 import { Avatar } from '@/components/ui/avatar'
@@ -6,9 +7,26 @@ import { Badge } from '@/components/ui/badge'
 import { AcceptInviteButton } from './accept-invite-button'
 import { CircleDot, Pencil, Eye, Clock } from 'lucide-react'
 import Link from 'next/link'
+import { getInviteForOG } from '@/lib/og/data'
 
-export const metadata = {
-  title: 'Accept Invite',
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}): Promise<Metadata> {
+  const { token } = await params
+  const invite = await getInviteForOG(token)
+
+  if (!invite || invite.expired) {
+    return {
+      title: 'Invalid Invite',
+    }
+  }
+
+  return {
+    title: `Join "${invite.taskTitle}"`,
+    description: `${invite.inviterName} invited you to collaborate`,
+  }
 }
 
 interface Props {

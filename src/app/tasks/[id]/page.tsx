@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import {
   ArrowLeft,
   Clock,
@@ -32,8 +33,11 @@ function parseLocation(location: string): string {
   }
 }
 
-export const metadata = {
+// Static metadata - no private task data exposed
+// Task details are only shown via invite links (/invite/[token])
+export const metadata: Metadata = {
   title: 'Task Details',
+  description: 'Sign in to view this task on WheelDo',
 }
 
 interface TaskPageProps {
