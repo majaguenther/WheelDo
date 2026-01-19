@@ -26,11 +26,13 @@ export const metadata: Metadata = {
   },
   description:
     'A todo app that helps you focus by limiting you to one task at a time. Spin the wheel when indecisive!',
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'WheelDo',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.svg',
   },
   openGraph: {
     type: 'website',

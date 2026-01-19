@@ -1,0 +1,16 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="192" height="192" rx="24" fill="#6366f1"/>
+
+  <!-- Outer circle (wheel) -->
+  <circle cx="96" cy="96" r="56" stroke="white" stroke-width="8" fill="none"/>
+
+  <!-- Inner dot -->
+  <circle cx="96" cy="96" r="16" fill="white"/>
+
+  <!-- Wheel spokes -->
+  <line x1="96" y1="48" x2="96" y2="72" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="96" y1="120" x2="96" y2="144" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="48" y1="96" x2="72" y2="96" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="120" y1="96" x2="144" y2="96" stroke="white" stroke-width="4" stroke-linecap="round"/>
+</svg>

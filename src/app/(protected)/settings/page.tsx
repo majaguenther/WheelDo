@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import { User, Palette, FolderOpen, Shield } from 'lucide-react'
+import { User, Palette, FolderOpen, Shield, Bell } from 'lucide-react'
 import { getCurrentUser } from '@/data/auth'
 import { getCategoriesForUser } from '@/data/categories'
 import { SettingsSkeleton } from '@/components/skeletons'
@@ -9,6 +9,7 @@ import { CategoryManager } from '@/components/features/category-manager'
 import { SignOutButton } from '@/components/features/sign-out-button'
 import { SessionManager } from '@/components/features/session-manager'
 import { ThemeSelector } from '@/components/features/theme-selector'
+import { PushNotificationManager } from '@/components/pwa'
 
 export const metadata = {
   title: 'Settings',
@@ -100,6 +101,20 @@ async function SettingsContent() {
           </CardHeader>
           <CardContent>
             <ThemeSelector />
+          </CardContent>
+        </Card>
+
+        {/* Notifications section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Notifications</CardTitle>
+            </div>
+            <CardDescription>Manage push notifications for task updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PushNotificationManager />
           </CardContent>
         </Card>
 

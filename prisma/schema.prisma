@@ -21,13 +21,14 @@ model User {
   // Theme preference (preset theme ID)
   themeId        String    @default("default")
 
-  accounts       Account[]
-  sessions       Session[]
-  tasks          Task[]
-  categories     Category[]
-  collaborations TaskCollaborator[]
-  notifications  Notification[]
-  createdInvites TaskInvite[] @relation("InviteCreator")
+  accounts          Account[]
+  sessions          Session[]
+  tasks             Task[]
+  categories        Category[]
+  collaborations    TaskCollaborator[]
+  notifications     Notification[]
+  createdInvites    TaskInvite[] @relation("InviteCreator")
+  pushSubscriptions PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -255,4 +256,24 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+// Push notification subscriptions for PWA
+model PushSubscription {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Web Push subscription data
+  endpoint  String @unique
+  p256dh    String // Public key for encryption
+  auth      String // Authentication secret
+
+  // Device info for management
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

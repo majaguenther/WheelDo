@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { ThemeProvider } from '@/contexts/theme-context'
+import { PWAProvider, InstallPrompt } from '@/components/pwa'
 import type { ThemeId } from '@/types/theme'
 
 interface ProvidersProps {
@@ -12,7 +13,10 @@ interface ProvidersProps {
 export function Providers({ children, initialThemeId }: ProvidersProps) {
   return (
     <ThemeProvider initialThemeId={initialThemeId}>
-      {children}
+      <PWAProvider>
+        {children}
+        <InstallPrompt />
+      </PWAProvider>
     </ThemeProvider>
   )
 }
