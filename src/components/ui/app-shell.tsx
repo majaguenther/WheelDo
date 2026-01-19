@@ -3,6 +3,7 @@
 import { ReactNode, useEffect } from 'react'
 import { Sidebar } from './sidebar'
 import { BottomNav } from './bottom-nav'
+import { NotificationDrawer } from '@/components/features/notification-drawer'
 import { useNotificationStore } from '@/stores/notification.store'
 
 interface AppShellProps {
@@ -25,6 +26,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
       <BottomNav />
+      <NotificationDrawer />
     </div>
   )
 }

@@ -39,9 +39,9 @@ export function BottomNav() {
           )
         })}
 
-        {/* Notifications button - mobile only uses a link approach for simplicity */}
-        <Link
-          href="/settings"
+        {/* Notifications button - opens drawer */}
+        <button
+          onClick={() => useNotificationStore.getState().openDropdown()}
           className={cn(
             'flex flex-col items-center justify-center w-full h-full gap-1 text-xs transition-colors relative',
             'text-muted-foreground hover:text-foreground'
@@ -56,7 +56,7 @@ export function BottomNav() {
             )}
           </div>
           <span>Alerts</span>
-        </Link>
+        </button>
 
         {navItems.slice(2).map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(`${href}/`)
