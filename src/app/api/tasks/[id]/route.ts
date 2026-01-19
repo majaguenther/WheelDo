@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { db } from '@/lib/db'
+import { getTaskWithAuth } from '@/lib/task-authorization'
 import type { TaskStatus, Effort, Urgency, RecurrenceType } from '@/generated/prisma/client'
 
 export async function GET(
@@ -16,22 +17,7 @@ export async function GET(
 
     const { id } = await params
 
-    const task = await db.task.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
-      include: {
-        category: true,
-        parent: true,
-        children: {
-          include: {
-            category: true,
-            children: true,
-          },
-        },
-      },
-    })
+    const task = await getTaskWithAuth(session.user.id, id)
 
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
@@ -87,16 +73,19 @@ export async function PATCH(
       position?: number
     }
 
-    // Verify the task belongs to the user
-    const existingTask = await db.task.findFirst({
-      where: { id, userId: session.user.id },
-    })
+    // Check authorization (owner or editor can update)
+    const taskWithAuth = await getTaskWithAuth(session.user.id, id)
 
-    if (!existingTask) {
+    if (!taskWithAuth) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // If setting to IN_PROGRESS, first defer any other in-progress task
+    if (taskWithAuth.role === 'viewer') {
+      return NextResponse.json({ error: 'You do not have permission to edit this task' }, { status: 403 })
+    }
+
+    // If setting to IN_PROGRESS, defer the user's other in-progress tasks
+    // (each user can have one active task independently)
     if (status === 'IN_PROGRESS') {
       await db.task.updateMany({
         where: {
@@ -132,6 +121,13 @@ export async function PATCH(
       include: {
         category: true,
         children: true,
+        collaborators: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
       },
     })
 

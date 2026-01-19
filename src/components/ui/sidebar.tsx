@@ -6,6 +6,7 @@ import { Home, CircleDot, History } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { UserProfileMenu } from './user-profile-menu'
+import { NotificationBell } from '@/components/features/notification-bell'
 
 const navItems = [
   { href: '/dashboard', label: 'Tasks', icon: Home },
@@ -19,10 +20,13 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen border-r bg-background fixed left-0 top-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-6 py-5 border-b">
-        <CircleDot className="h-8 w-8 text-primary" />
-        <span className="text-xl font-bold">WheelDo</span>
+      {/* Logo and notification */}
+      <div className="flex items-center justify-between px-6 py-5 border-b">
+        <div className="flex items-center gap-2">
+          <CircleDot className="h-8 w-8 text-primary" />
+          <span className="text-xl font-bold">WheelDo</span>
+        </div>
+        {session?.user && <NotificationBell />}
       </div>
 
       {/* Navigation */}

@@ -21,11 +21,13 @@ model User {
   // Theme preference (preset theme ID)
   themeId        String    @default("default")
 
-  accounts      Account[]
-  sessions      Session[]
-  tasks         Task[]
-  categories    Category[]
+  accounts       Account[]
+  sessions       Session[]
+  tasks          Task[]
+  categories     Category[]
   collaborations TaskCollaborator[]
+  notifications  Notification[]
+  createdInvites TaskInvite[] @relation("InviteCreator")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -168,6 +170,10 @@ model Task {
   // Collaborators
   collaborators TaskCollaborator[]
 
+  // Invites and notifications
+  invites       TaskInvite[]
+  notifications Notification[]
+
   // Completion tracking
   completedAt DateTime?
 
@@ -183,16 +189,67 @@ model Task {
 }
 
 model TaskCollaborator {
-  id     String @id @default(cuid())
-  taskId String
-  userId String
-  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  taskId    String
+  userId    String
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Permission level
-  canEdit Boolean @default(false)
+  canEdit   Boolean @default(false)
+
+  // Who invited this collaborator
+  invitedBy String?
 
   createdAt DateTime @default(now())
 
   @@unique([taskId, userId])
+  @@index([userId])
+}
+
+// Task sharing invite links
+model TaskInvite {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdBy String
+  creator   User     @relation("InviteCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  // Permission granted on accept
+  canEdit   Boolean  @default(false)
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([taskId])
+}
+
+// Notification types
+enum NotificationType {
+  TASK_SHARED
+  COLLABORATOR_JOINED
+  COLLABORATOR_LEFT
+  TASK_COMPLETED
+}
+
+// In-app notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  title     String
+  message   String
+
+  taskId    String?
+  task      Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

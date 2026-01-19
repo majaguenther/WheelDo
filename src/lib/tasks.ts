@@ -12,39 +12,110 @@ export type TaskWithRelations = Prisma.TaskGetPayload<{
         children: true
       }
     }
+    collaborators?: {
+      include: {
+        user: {
+          select: { id: true; name: true; email: true; image: true }
+        }
+      }
+    }
+    user?: {
+      select: { id: true; name: true; email: true; image: true }
+    }
   }
-}>
+}> & {
+  role?: 'owner' | 'editor' | 'viewer'
+  isShared?: boolean
+}
 
 export async function getTasks(options?: {
   status?: TaskStatus[]
   parentId?: string | null
+  includeShared?: boolean
 }) {
   const user = await requireAuth()
+  const includeShared = options?.includeShared ?? true
 
-  return db.task.findMany({
+  const taskInclude = {
+    category: true,
+    children: {
+      include: {
+        category: true,
+        children: true,
+      },
+      orderBy: { position: 'asc' } as const,
+    },
+    collaborators: {
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, image: true },
+        },
+      },
+    },
+    user: {
+      select: { id: true, name: true, email: true, image: true },
+    },
+  }
+
+  const orderBy = [
+    { status: 'asc' as const },
+    { urgency: 'desc' as const },
+    { deadline: 'asc' as const },
+    { position: 'asc' as const },
+  ]
+
+  // Get owned tasks
+  const ownedTasks = await db.task.findMany({
     where: {
       userId: user.id,
       ...(options?.status && { status: { in: options.status } }),
       ...(options?.parentId === null ? { parentId: null } : {}),
       ...(options?.parentId ? { parentId: options.parentId } : {}),
     },
-    include: {
-      category: true,
-      children: {
-        include: {
-          category: true,
-          children: true,
-        },
-        orderBy: { position: 'asc' },
+    include: taskInclude,
+    orderBy,
+  })
+
+  if (!includeShared) {
+    return ownedTasks.map((task) => ({
+      ...task,
+      role: 'owner' as const,
+      isShared: task.collaborators.length > 0,
+    }))
+  }
+
+  // Get shared tasks (where user is a collaborator)
+  const sharedTasks = await db.task.findMany({
+    where: {
+      ...(options?.status && { status: { in: options.status } }),
+      ...(options?.parentId === null ? { parentId: null } : {}),
+      ...(options?.parentId ? { parentId: options.parentId } : {}),
+      collaborators: {
+        some: { userId: user.id },
       },
     },
-    orderBy: [
-      { status: 'asc' }, // IN_PROGRESS first
-      { urgency: 'desc' }, // HIGH urgency first
-      { deadline: 'asc' }, // Earliest deadline first
-      { position: 'asc' },
-    ],
+    include: taskInclude,
+    orderBy,
   })
+
+  // Combine and add role info
+  const tasksWithRoles = [
+    ...ownedTasks.map((task) => ({
+      ...task,
+      role: 'owner' as const,
+      isShared: task.collaborators.length > 0,
+    })),
+    ...sharedTasks.map((task) => {
+      const collab = task.collaborators.find((c) => c.userId === user.id)
+      return {
+        ...task,
+        role: (collab?.canEdit ? 'editor' : 'viewer') as 'editor' | 'viewer',
+        isShared: true,
+      }
+    }),
+  ]
+
+  return tasksWithRoles
 }
 
 export async function getActiveTask() {

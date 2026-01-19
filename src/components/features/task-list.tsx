@@ -8,10 +8,28 @@ import { Button } from '@/components/ui/button'
 import { ListTodo, Plus, Filter } from 'lucide-react'
 import type { Task, Category, TaskStatus } from '@/generated/prisma/client'
 
+interface CollaboratorUser {
+  id: string
+  name: string | null
+  email: string
+  image: string | null
+}
+
+interface Collaborator {
+  id: string
+  userId: string
+  canEdit: boolean
+  user: CollaboratorUser
+}
+
 interface TaskListProps {
   tasks: (Task & {
     category: Category | null
     children: (Task & { category: Category | null; children: Task[] })[]
+    collaborators?: Collaborator[]
+    user?: CollaboratorUser
+    role?: 'owner' | 'editor' | 'viewer'
+    isShared?: boolean
   })[]
   activeTaskId?: string | null
   onCreateTask?: () => void
@@ -81,6 +99,8 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
           <TaskCard
             task={activeTask}
             onStatusChange={handleStatusChange}
+            role={activeTask.role}
+            isShared={activeTask.isShared}
           />
         </div>
       )}
@@ -122,6 +142,8 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
             key={task.id}
             task={task}
             onStatusChange={handleStatusChange}
+            role={task.role}
+            isShared={task.isShared}
           />
         ))}
       </div>

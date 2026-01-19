@@ -10,15 +10,17 @@ import {
   Zap,
   Repeat,
   FolderOpen,
+  Users,
 } from 'lucide-react'
 import { getSession } from '@/lib/auth-server'
-import { getTask } from '@/lib/tasks'
+import { getTaskWithAuth } from '@/lib/task-authorization'
 import { formatDuration, formatRelativeTime, getDeadlineColor, cn } from '@/lib/utils'
 import { AppShell } from '@/components/ui/app-shell'
 import { LoadingPage } from '@/components/ui/loading'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { TaskActions } from '@/components/features/task-actions'
+import { Avatar } from '@/components/ui/avatar'
 
 // Safely parse location - handles both JSON objects and plain text
 function parseLocation(location: string): string {
@@ -45,13 +47,14 @@ async function TaskContent({ params }: TaskPageProps) {
   }
 
   const { id } = await params
-  const task = await getTask(id)
+  const task = await getTaskWithAuth(session.user.id, id)
 
   if (!task) {
     notFound()
   }
 
   const deadlineColor = getDeadlineColor(task.deadline)
+  const isSharedTask = task.role !== 'owner'
 
   const effortLabels = {
     MINIMAL: '1 - Minimal',
@@ -87,7 +90,7 @@ async function TaskContent({ params }: TaskPageProps) {
 
         {/* Task header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
             <h1 className="text-2xl font-bold">{task.title}</h1>
             {task.status === 'IN_PROGRESS' && (
               <Badge variant="default">In Progress</Badge>
@@ -95,7 +98,23 @@ async function TaskContent({ params }: TaskPageProps) {
             {task.status === 'COMPLETED' && (
               <Badge variant="success">Completed</Badge>
             )}
+            {isSharedTask && (
+              <Badge variant="secondary" className="gap-1">
+                <Users className="h-3 w-3" />
+                Shared with you
+              </Badge>
+            )}
           </div>
+
+          {/* Show owner for shared tasks */}
+          {isSharedTask && task.user && (
+            <div className="flex items-center gap-2 mb-2">
+              <Avatar user={task.user} size="xs" />
+              <span className="text-sm text-muted-foreground">
+                Owned by {task.user.name || task.user.email}
+              </span>
+            </div>
+          )}
 
           {task.body && (
             <p className="text-muted-foreground">{task.body}</p>
@@ -103,7 +122,7 @@ async function TaskContent({ params }: TaskPageProps) {
         </div>
 
         {/* Task actions */}
-        <TaskActions task={task} />
+        <TaskActions task={task} role={task.role} />
 
         {/* Task details */}
         <Card className="mt-6">
@@ -229,6 +248,39 @@ async function TaskContent({ params }: TaskPageProps) {
             >
               <p className="font-medium">{task.parent.title}</p>
             </Link>
+          </div>
+        )}
+
+        {/* Collaborators */}
+        {task.collaborators && task.collaborators.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Collaborators
+            </h2>
+            <div className="space-y-2">
+              {task.collaborators.map((collab) => (
+                <div
+                  key={collab.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border"
+                >
+                  <Avatar user={collab.user} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">
+                      {collab.user.name || collab.user.email}
+                    </p>
+                    {collab.user.name && (
+                      <p className="text-sm text-muted-foreground truncate">
+                        {collab.user.email}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="outline">
+                    {collab.canEdit ? 'Editor' : 'Viewer'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -13,20 +13,45 @@ import {
   Check,
   Zap,
   AlertCircle,
+  Users,
 } from 'lucide-react'
 import { cn, formatDuration, formatRelativeTime, getDeadlineColor } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { AvatarStack } from '@/components/ui/avatar-stack'
 import type { Task, Category, Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
+
+interface Collaborator {
+  id: string
+  userId: string
+  canEdit: boolean
+  user: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
+  }
+}
+
+interface TaskOwner {
+  id: string
+  name: string | null
+  email: string
+  image: string | null
+}
 
 interface TaskCardProps {
   task: Task & {
     category: Category | null
     children: Task[]
+    collaborators?: Collaborator[]
+    user?: TaskOwner
   }
   onStatusChange?: (taskId: string, status: TaskStatus) => void
   showChildren?: boolean
   isChild?: boolean
+  role?: 'owner' | 'editor' | 'viewer'
+  isShared?: boolean
 }
 
 const urgencyColors: Record<Urgency, string> = {
@@ -59,6 +84,8 @@ export function TaskCard({
   onStatusChange,
   showChildren = true,
   isChild = false,
+  role = 'owner',
+  isShared = false,
 }: TaskCardProps) {
   const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(true)
@@ -66,6 +93,13 @@ export function TaskCard({
   const deadlineColor = getDeadlineColor(task.deadline)
   const isInProgress = task.status === 'IN_PROGRESS'
   const isCompleted = task.status === 'COMPLETED'
+  const canEdit = role === 'owner' || role === 'editor'
+
+  // Collect all users for avatar stack (owner + collaborators)
+  const allUsers = [
+    ...(task.user ? [task.user] : []),
+    ...(task.collaborators?.map((c) => c.user) || []),
+  ].filter((u, i, arr) => arr.findIndex((u2) => u2.id === u.id) === i)
 
   const handleCardClick = () => {
     router.push(`/tasks/${task.id}`)
@@ -143,6 +177,12 @@ export function TaskCard({
                   In Progress
                 </Badge>
               )}
+              {isShared && role !== 'owner' && (
+                <Badge variant="secondary" className="gap-1">
+                  <Users className="h-3 w-3" />
+                  Shared
+                </Badge>
+              )}
               {task.category && (
                 <Badge
                   variant="outline"
@@ -205,42 +245,51 @@ export function TaskCard({
             )}
           </div>
 
+          {/* Avatar stack for collaborators */}
+          {allUsers.length > 1 && (
+            <div className="flex-shrink-0">
+              <AvatarStack users={allUsers} max={3} size="sm" />
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {!isCompleted && !isInProgress && (
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleStart}
-                title="Start task"
-                className="h-8 w-8"
-              >
-                <Play className="h-4 w-4" />
-              </Button>
-            )}
-            {isInProgress && (
-              <>
+          {canEdit && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {!isCompleted && !isInProgress && (
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={handleDefer}
-                  title="Defer task"
+                  onClick={handleStart}
+                  title="Start task"
                   className="h-8 w-8"
                 >
-                  <Pause className="h-4 w-4" />
+                  <Play className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="default"
-                  onClick={handleComplete}
-                  title="Complete task"
-                  className="h-8 w-8"
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
+              )}
+              {isInProgress && (
+                <>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleDefer}
+                    title="Defer task"
+                    className="h-8 w-8"
+                  >
+                    <Pause className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="default"
+                    onClick={handleComplete}
+                    title="Complete task"
+                    className="h-8 w-8"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -11,7 +11,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const tasks = await db.task.findMany({
+    // Get owned tasks
+    const ownedTasks = await db.task.findMany({
       where: {
         userId: session.user.id,
         parentId: null,
@@ -24,6 +25,16 @@ export async function GET() {
             children: true,
           },
         },
+        collaborators: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
+        user: {
+          select: { id: true, name: true, email: true, image: true },
+        },
       },
       orderBy: [
         { status: 'asc' },
@@ -33,7 +44,59 @@ export async function GET() {
       ],
     })
 
-    return NextResponse.json(tasks)
+    // Get shared tasks (where user is a collaborator)
+    const sharedTasks = await db.task.findMany({
+      where: {
+        parentId: null,
+        collaborators: {
+          some: { userId: session.user.id },
+        },
+      },
+      include: {
+        category: true,
+        children: {
+          include: {
+            category: true,
+            children: true,
+          },
+        },
+        collaborators: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
+        user: {
+          select: { id: true, name: true, email: true, image: true },
+        },
+      },
+      orderBy: [
+        { status: 'asc' },
+        { urgency: 'desc' },
+        { deadline: 'asc' },
+        { position: 'asc' },
+      ],
+    })
+
+    // Add role info to tasks
+    const tasksWithRoles = [
+      ...ownedTasks.map((task) => ({
+        ...task,
+        role: 'owner' as const,
+        isShared: task.collaborators.length > 0,
+      })),
+      ...sharedTasks.map((task) => {
+        const collab = task.collaborators.find((c) => c.userId === session.user.id)
+        return {
+          ...task,
+          role: (collab?.canEdit ? 'editor' : 'viewer') as 'editor' | 'viewer',
+          isShared: true,
+        }
+      }),
+    ]
+
+    return NextResponse.json(tasksWithRoles)
   } catch (error) {
     console.error('Failed to fetch tasks:', error)
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
