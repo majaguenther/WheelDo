@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Label } from '@/components/ui/label'
 import { createCategory, deleteCategory } from '@/actions/categories'
-import type { CategoryDTO } from '@/data/dto/category.dto'
+import type { CategoryDTO } from '@/data/dto/category.types'
 
 interface CategoryManagerProps {
   categories: CategoryDTO[]

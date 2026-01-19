@@ -1,15 +1,9 @@
 import 'server-only'
 import type { Category } from '@/generated/prisma/client'
 
-/**
- * Category DTO - safe public representation
- */
-export interface CategoryDTO {
-  id: string
-  name: string
-  color: string
-  icon: string | null
-}
+// Re-export types from the client-safe types file
+export type { CategoryDTO, CategoryWithCountDTO } from './category.types'
+import type { CategoryDTO } from './category.types'
 
 /**
  * Convert Category to DTO
@@ -23,11 +17,4 @@ export function toCategoryDTO(
     color: category.color,
     icon: category.icon,
   }
-}
-
-/**
- * Category with task count for listing
- */
-export interface CategoryWithCountDTO extends CategoryDTO {
-  taskCount: number
 }

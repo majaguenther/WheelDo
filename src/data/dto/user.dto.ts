@@ -1,16 +1,9 @@
 import 'server-only'
 import type { User } from '@/generated/prisma/client'
 
-/**
- * Public user DTO - only includes safe fields
- * Never includes tokens, secrets, or internal IDs
- */
-export interface UserDTO {
-  id: string
-  name: string | null
-  email: string
-  image: string | null
-}
+// Re-export types from the client-safe types file
+export type { UserDTO, CollaboratorDTO } from './user.types'
+import type { UserDTO } from './user.types'
 
 /**
  * Convert User to public DTO
@@ -22,11 +15,4 @@ export function toUserDTO(user: Pick<User, 'id' | 'name' | 'email' | 'image'>): 
     email: user.email,
     image: user.image,
   }
-}
-
-/**
- * User with role information for collaborators
- */
-export interface CollaboratorDTO extends UserDTO {
-  canEdit: boolean
 }

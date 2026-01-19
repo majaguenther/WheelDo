@@ -7,7 +7,7 @@ import { Triangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { startTask } from '@/actions/tasks'
-import type { TaskDTO } from '@/data/dto/task.dto'
+import type { TaskDTO } from '@/data/dto/task.types'
 
 interface SpinWheelProps {
   tasks: TaskDTO[]

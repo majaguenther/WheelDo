@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CreateTaskModal } from './create-task-modal'
-import type { CategoryDTO } from '@/data/dto/category.dto'
+import type { CategoryDTO } from '@/data/dto/category.types'
 
 interface CreateTaskButtonProps {
   categories: CategoryDTO[]

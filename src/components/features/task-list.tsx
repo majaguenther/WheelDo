@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { ListTodo, Plus, Filter } from 'lucide-react'
 import { updateTaskStatus } from '@/actions/tasks'
-import type { TaskDTO } from '@/data/dto/task.dto'
+import type { TaskDTO } from '@/data/dto/task.types'
 import type { TaskStatus } from '@/generated/prisma/client'
 
 interface TaskListProps {

@@ -18,7 +18,7 @@ import {
 import { cn, formatDuration, formatRelativeTime, getDeadlineColor } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { TaskDTO, ChildTaskDTO } from '@/data/dto/task.dto'
+import type { TaskDTO, ChildTaskDTO } from '@/data/dto/task.types'
 import type { Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
 
 interface TaskCardProps {

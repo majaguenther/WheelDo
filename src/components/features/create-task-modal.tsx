@@ -24,7 +24,7 @@ import { DurationPicker } from '@/components/ui/duration-picker'
 import { UrgencySelector } from '@/components/ui/urgency-selector'
 import { EffortSelector } from '@/components/ui/effort-selector'
 import { createTask } from '@/actions/tasks'
-import type { CategoryDTO } from '@/data/dto/category.dto'
+import type { CategoryDTO } from '@/data/dto/category.types'
 import type { Urgency, Effort, RecurrenceType } from '@/generated/prisma/client'
 
 interface CreateTaskModalProps {
