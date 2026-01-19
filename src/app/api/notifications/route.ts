@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getNotifications, getUnreadCount } from '@/data/notifications'
 import { markNotificationsRead, markAllNotificationsRead } from '@/actions/notifications'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 
 export async function GET(request: NextRequest) {
   try {

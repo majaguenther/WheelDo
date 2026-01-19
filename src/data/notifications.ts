@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { db } from '@/lib/db'
-import { getCurrentUser } from './auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import type { NotificationDTO } from './dto/notification.dto'
 
 // Re-export the DTO type for convenience

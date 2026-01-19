@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { History as HistoryIcon } from 'lucide-react'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import { getCompletedTasksForUser } from '@/data/tasks'
 import { HistorySkeleton } from '@/components/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'

@@ -15,7 +15,7 @@ import {
   Lock,
   AlertTriangle,
 } from 'lucide-react'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import { getTaskByIdForUser, getPotentialParentTasks } from '@/data/tasks'
 import { getCategoriesForUser } from '@/data/categories'
 import { formatDuration, formatRelativeTime, getDeadlineColor, cn } from '@/lib/utils'

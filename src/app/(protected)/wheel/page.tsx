@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import { getWheelEligibleTasksForUser, getActiveTaskForUser } from '@/data/tasks'
 import { WheelContent } from '@/components/features/wheel-content'
 import { WheelSkeleton } from '@/components/skeletons'

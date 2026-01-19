@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import {
   ActionError,
   withActionErrorHandling,

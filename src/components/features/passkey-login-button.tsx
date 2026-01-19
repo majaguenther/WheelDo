@@ -1,16 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { PasskeyIcon } from '@/components/ui/passkey-icon'
 
 interface PasskeyLoginButtonProps {
   onError?: (error: string) => void
+  callbackURL?: string
 }
 
-export function PasskeyLoginButton({ onError }: PasskeyLoginButtonProps) {
+export function PasskeyLoginButton({ onError, callbackURL = '/dashboard' }: PasskeyLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogin = async () => {
     setIsLoading(true)
@@ -18,13 +21,17 @@ export function PasskeyLoginButton({ onError }: PasskeyLoginButtonProps) {
       const result = await authClient.signIn.passkey()
       if (result?.error) {
         onError?.(result.error.message || 'Failed to sign in with passkey')
+        setIsLoading(false)
+      } else {
+        // Success - redirect to callback URL
+        router.push(callbackURL)
+        router.refresh()
       }
     } catch (error) {
       // User cancelled or WebAuthn error
       if (error instanceof Error && !error.message.includes('cancelled')) {
         onError?.(error.message)
       }
-    } finally {
       setIsLoading(false)
     }
   }

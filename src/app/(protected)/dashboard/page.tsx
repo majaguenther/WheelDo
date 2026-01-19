@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { CircleDot } from 'lucide-react'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import { getAllTasksForUser, getActiveTaskForUser, getPotentialParentTasks } from '@/data/tasks'
 import { getCategoriesForUser } from '@/data/categories'
 import { TaskList } from '@/components/features/task-list'

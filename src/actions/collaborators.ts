@@ -2,7 +2,7 @@
 
 import {revalidateTag} from 'next/cache'
 import {db} from '@/lib/db'
-import {getCurrentUser} from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import {isTaskOwnerById} from '@/data/tasks'
 import {createNotification} from '@/lib/notifications'
 import {

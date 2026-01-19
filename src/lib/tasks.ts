@@ -67,7 +67,7 @@ export async function getTasks(options?: {
   // Get owned tasks
   const ownedTasks = await db.task.findMany({
     where: {
-      userId: user.id,
+      userId: user.userId,
       ...(options?.status && { status: { in: options.status } }),
       ...(options?.parentId === null ? { parentId: null } : {}),
       ...(options?.parentId ? { parentId: options.parentId } : {}),
@@ -91,7 +91,7 @@ export async function getTasks(options?: {
       ...(options?.parentId === null ? { parentId: null } : {}),
       ...(options?.parentId ? { parentId: options.parentId } : {}),
       collaborators: {
-        some: { userId: user.id },
+        some: { userId: user.userId },
       },
     },
     include: taskInclude,
@@ -106,7 +106,7 @@ export async function getTasks(options?: {
       isShared: task.collaborators.length > 0,
     })),
     ...sharedTasks.map((task) => {
-      const collab = task.collaborators.find((c) => c.userId === user.id)
+      const collab = task.collaborators.find((c) => c.userId === user.userId)
       return {
         ...task,
         role: (collab?.canEdit ? 'editor' : 'viewer') as 'editor' | 'viewer',
@@ -123,7 +123,7 @@ export async function getActiveTask() {
 
   return db.task.findFirst({
     where: {
-      userId: user.id,
+      userId: user.userId,
       status: 'IN_PROGRESS',
     },
     include: {
@@ -144,7 +144,7 @@ export async function getTask(id: string) {
   return db.task.findFirst({
     where: {
       id,
-      userId: user.id,
+      userId: user.userId,
     },
     include: {
       category: true,
@@ -164,7 +164,7 @@ export async function getCompletedTasks() {
 
   return db.task.findMany({
     where: {
-      userId: user.id,
+      userId: user.userId,
       status: 'COMPLETED',
     },
     include: {
@@ -180,7 +180,7 @@ export async function getTasksForWheel(maxDuration?: number) {
 
   return db.task.findMany({
     where: {
-      userId: user.id,
+      userId: user.userId,
       status: 'PENDING',
       parentId: null, // Only top-level tasks
       ...(maxDuration && { duration: { lte: maxDuration } }),
@@ -209,14 +209,14 @@ export async function createTask(data: {
 
   // Get the max position for ordering
   const maxPosition = await db.task.aggregate({
-    where: { userId: user.id, parentId: data.parentId || null },
+    where: { userId: user.userId, parentId: data.parentId || null },
     _max: { position: true },
   })
 
   return db.task.create({
     data: {
       ...data,
-      userId: user.id,
+      userId: user.userId,
       position: (maxPosition._max.position || 0) + 1,
     },
     include: {
@@ -250,7 +250,7 @@ export async function updateTask(
   if (data.status === 'IN_PROGRESS') {
     await db.task.updateMany({
       where: {
-        userId: user.id,
+        userId: user.userId,
         status: 'IN_PROGRESS',
         id: { not: id },
       },
@@ -262,7 +262,7 @@ export async function updateTask(
   const completedAt = data.status === 'COMPLETED' ? new Date() : undefined
 
   return db.task.update({
-    where: { id, userId: user.id },
+    where: { id, userId: user.userId },
     data: {
       ...data,
       ...(completedAt && { completedAt }),
@@ -278,7 +278,7 @@ export async function deleteTask(id: string) {
   const user = await requireAuth()
 
   return db.task.delete({
-    where: { id, userId: user.id },
+    where: { id, userId: user.userId },
   })
 }
 
@@ -286,7 +286,7 @@ export async function getCategories() {
   const user = await requireAuth()
 
   return db.category.findMany({
-    where: { userId: user.id },
+    where: { userId: user.userId },
     orderBy: { name: 'asc' },
   })
 }
@@ -297,7 +297,7 @@ export async function createCategory(data: { name: string; color?: string; icon?
   return db.category.create({
     data: {
       ...data,
-      userId: user.id,
+      userId: user.userId,
     },
   })
 }

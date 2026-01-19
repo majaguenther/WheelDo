@@ -2,7 +2,7 @@ import 'server-only'
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { db } from '@/lib/db'
-import { getCurrentUser } from './auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import { toTaskDTO, toTaskDetailDTO, type TaskDTO, type TaskDetailDTO } from './dto/task.dto'
 
 // ============================================

@@ -4,7 +4,7 @@ import {headers} from 'next/headers'
 import {isTaskOwnerById} from '@/data/tasks'
 import {createInvite, getTaskInvites, revokeInvite} from '@/lib/invites'
 import {rateLimiters, checkRateLimit} from '@/lib/rate-limit'
-import {getBaseUrl} from '@/lib/url'
+import { getBaseUrl } from '@/lib/auth-server'
 
 export async function GET(
     request: NextRequest,

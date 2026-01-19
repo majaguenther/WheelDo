@@ -4,7 +4,7 @@ import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import { getThemeScript, isValidThemeId } from '@/lib/themes'
-import { getBaseUrl } from '@/lib/url'
+import { getBaseUrl } from '@/lib/auth-server'
 import type { ThemeId } from '@/types/theme'
 import './globals.css'
 

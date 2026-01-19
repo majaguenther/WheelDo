@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
 import { User, Palette, FolderOpen, Shield, Bell, Key } from 'lucide-react'
-import { getCurrentUser } from '@/data/auth'
+import { getCurrentUser } from '@/lib/auth-server'
 import { getCategoriesForUser } from '@/data/categories'
 import { SettingsSkeleton } from '@/components/skeletons'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'

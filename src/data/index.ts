@@ -1,7 +1,7 @@
 // Data Access Layer exports
 // All data functions perform authorization checks
+// Auth utilities are in @/lib/auth-server
 
-export * from './auth'
 export * from './tasks'
 export * from './categories'
 export * from './notifications'
