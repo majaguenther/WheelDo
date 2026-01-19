@@ -1,19 +1,7 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Full background for maskable (no rounded corners - OS handles shape) -->
+  <!-- Full bleed background for maskable icon -->
   <rect width="512" height="512" fill="#6366f1"/>
-
-  <!-- Safe zone is 80% of icon (408x408 centered) - keep content within -->
-  <!-- Center point at 256,256 with radius ~150 for safe zone -->
-
-  <!-- Outer circle (wheel) - scaled to fit safe zone -->
-  <circle cx="256" cy="256" r="120" stroke="white" stroke-width="16" fill="none"/>
-
-  <!-- Inner dot -->
-  <circle cx="256" cy="256" r="34" fill="white"/>
-
-  <!-- Wheel spokes -->
-  <line x1="256" y1="152" x2="256" y2="200" stroke="white" stroke-width="8" stroke-linecap="round"/>
-  <line x1="256" y1="312" x2="256" y2="360" stroke="white" stroke-width="8" stroke-linecap="round"/>
-  <line x1="152" y1="256" x2="200" y2="256" stroke="white" stroke-width="8" stroke-linecap="round"/>
-  <line x1="312" y1="256" x2="360" y2="256" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <!-- Content within 80% safe zone (408x408 centered, starting at 52,52) -->
+  <circle cx="256" cy="256" r="112" stroke="white" stroke-width="19" fill="none"/>
+  <circle cx="256" cy="256" r="19" fill="white"/>
 </svg>
