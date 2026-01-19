@@ -2,6 +2,7 @@ import type {MetadataRoute} from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
+        id: '/dashboard',
         name: 'WheelDo - Focus on One Task at a Time',
         short_name: 'WheelDo',
         description:
