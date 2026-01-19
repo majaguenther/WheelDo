@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Providers } from '@/components/providers'
+import { getSession } from '@/lib/auth-server'
+import { db } from '@/lib/db'
+import { getThemeScript, isValidThemeId } from '@/lib/themes'
+import type { ThemeId } from '@/types/theme'
 import './globals.css'
 
 const geistSans = Geist({
@@ -39,17 +43,44 @@ export const viewport: Viewport = {
   ],
 }
 
-export default function RootLayout({
+async function getUserThemeId(): Promise<ThemeId> {
+  try {
+    const session = await getSession()
+    if (!session?.user?.id) {
+      return 'default'
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { themeId: true },
+    })
+
+    const themeId = user?.themeId ?? 'default'
+    return isValidThemeId(themeId) ? themeId : 'default'
+  } catch {
+    return 'default'
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const themeId = await getUserThemeId()
+  // Theme script is generated from trusted preset data, not user input
+  const themeScript = getThemeScript(themeId)
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Inline script to apply theme before hydration (prevents FOUC) */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        <Providers>{children}</Providers>
+        <Providers initialThemeId={themeId}>{children}</Providers>
       </body>
     </html>
   )

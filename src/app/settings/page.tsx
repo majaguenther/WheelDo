@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { CategoryManager } from '@/components/features/category-manager'
 import { SignOutButton } from '@/components/features/sign-out-button'
 import { SessionManager } from '@/components/features/session-manager'
+import { ThemeSelector } from '@/components/features/theme-selector'
 
 export const metadata = {
   title: 'Settings',
@@ -100,40 +101,7 @@ async function SettingsContent() {
             <CardDescription>Customize the look and feel</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium mb-2">Theme</p>
-                <p className="text-sm text-muted-foreground">
-                  WheelDo automatically matches your system preference for light or dark mode.
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium mb-3">Accent Color</p>
-                <div className="flex gap-2">
-                  {[
-                    { color: '#6366f1', name: 'Indigo' },
-                    { color: '#8b5cf6', name: 'Violet' },
-                    { color: '#ec4899', name: 'Pink' },
-                    { color: '#f43f5e', name: 'Rose' },
-                    { color: '#f97316', name: 'Orange' },
-                    { color: '#22c55e', name: 'Green' },
-                    { color: '#06b6d4', name: 'Cyan' },
-                    { color: '#3b82f6', name: 'Blue' },
-                  ].map((theme) => (
-                    <button
-                      key={theme.color}
-                      className="w-8 h-8 rounded-full border-2 border-transparent hover:border-foreground/50 transition-colors"
-                      style={{ backgroundColor: theme.color }}
-                      title={theme.name}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Theme customization coming soon!
-                </p>
-              </div>
-            </div>
+            <ThemeSelector />
           </CardContent>
         </Card>
 

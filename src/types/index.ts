@@ -51,10 +51,6 @@ export type LocationData = {
   country?: string
 }
 
-// Theme settings
-export type ThemeSettings = {
-  primaryColor: string
-  secondaryColor: string
-  accentColor: string
-}
+// Re-export theme types
+export type { ThemeId, Theme, ThemeColors } from './theme'
 

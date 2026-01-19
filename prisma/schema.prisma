@@ -18,10 +18,8 @@ model User {
   emailVerified Boolean   @default(false)
   image         String?
 
-  // Custom theme preferences
-  primaryColor   String?
-  secondaryColor String?
-  accentColor    String?
+  // Theme preference (preset theme ID)
+  themeId        String    @default("default")
 
   accounts      Account[]
   sessions      Session[]
