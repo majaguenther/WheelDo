@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useTransition, useMemo, useCallback } from 'react'
+import { useTransition, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { TaskCard } from './task-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { ListTodo, Plus, Filter } from 'lucide-react'
+import { ListTodo, Plus } from 'lucide-react'
 import { startTask, completeTask, deferTask, revertTask } from '@/actions/tasks'
 import type { TaskDTO } from '@/data/dto/task.types'
 import type { TaskStatus } from '@/generated/prisma/client'
@@ -19,7 +19,6 @@ interface TaskListProps {
 export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine' | 'shared'>('all')
 
   // Memoize active task lookup
   const activeTask = useMemo(
@@ -34,17 +33,10 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
     [tasks, activeTaskId]
   )
 
-  // Memoize filtered tasks by ownership
+  // Memoize filtered tasks (exclude completed)
   const filteredTasks = useMemo(() => {
-    return otherTasks.filter((task) => {
-      // Always exclude completed tasks from the main list
-      if (task.status === 'COMPLETED') return false
-      // Apply ownership filter
-      if (ownershipFilter === 'mine') return task.role === 'owner'
-      if (ownershipFilter === 'shared') return task.role !== 'owner'
-      return true
-    })
-  }, [otherTasks, ownershipFilter])
+    return otherTasks.filter((task) => task.status !== 'COMPLETED')
+  }, [otherTasks])
 
   // Memoize status change handler
   const handleStatusChange = useCallback(
@@ -111,49 +103,6 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
           />
         </div>
       )}
-
-      {/* Ownership filter tabs */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2" role="group" aria-label="Task ownership filter">
-          <button
-            onClick={() => setOwnershipFilter('all')}
-            aria-pressed={ownershipFilter === 'all'}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              ownershipFilter === 'all'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-secondary'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setOwnershipFilter('mine')}
-            aria-pressed={ownershipFilter === 'mine'}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              ownershipFilter === 'mine'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-secondary'
-            }`}
-          >
-            My Tasks
-          </button>
-          <button
-            onClick={() => setOwnershipFilter('shared')}
-            aria-pressed={ownershipFilter === 'shared'}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              ownershipFilter === 'shared'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-secondary'
-            }`}
-          >
-            Shared
-          </button>
-        </div>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Filter className="h-4 w-4" />
-          <span className="hidden sm:inline">Filters</span>
-        </Button>
-      </div>
 
       {/* Task list */}
       <div className="space-y-3">
