@@ -8,7 +8,6 @@ import Link from 'next/link'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useClickOutside } from '@/hooks/use-click-outside'
 import { useEscapeKey } from '@/hooks/use-escape-key'
-import { usePolling } from '@/hooks/use-polling'
 import { markNotificationRead, markAllNotificationsRead } from '@/actions/notifications'
 
 interface NotificationResponse {
@@ -32,7 +31,6 @@ export function NotificationBell() {
     isLoading,
     isDropdownOpen,
     setNotifications,
-    setUnreadCount,
     setIsLoading,
     toggleDropdown,
     closeDropdown,
@@ -46,33 +44,12 @@ export function NotificationBell() {
   // Escape key to close
   useEscapeKey(closeDropdown, isDropdownOpen)
 
-  // Fetcher for notifications
+  // Fetcher for full notifications (only when dropdown opens)
   const fetchNotifications = useCallback(async (): Promise<NotificationResponse> => {
     const res = await fetch('/api/notifications?limit=10')
     if (!res.ok) throw new Error('Failed to fetch')
     return res.json()
   }, [])
-
-  // Fetcher for unread count only
-  const fetchUnreadCount = useCallback(async (): Promise<{ count: number }> => {
-    const res = await fetch('/api/notifications?countOnly=true')
-    if (!res.ok) throw new Error('Failed to fetch')
-    return res.json()
-  }, [])
-
-  // Poll for unread count every 30 seconds
-  const { data: countData } = usePolling(fetchUnreadCount, {
-    interval: 30000,
-    pauseOnHidden: true,
-    immediate: true,
-  })
-
-  // Update store when count data changes
-  useEffect(() => {
-    if (countData?.count !== undefined) {
-      setUnreadCount(countData.count)
-    }
-  }, [countData, setUnreadCount])
 
   // Fetch full notifications when dropdown opens
   useEffect(() => {

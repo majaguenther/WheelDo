@@ -9,6 +9,8 @@ interface NotificationState {
   isLoading: boolean
   isDropdownOpen: boolean
   lastFetched: Date | null
+  isPollingActive: boolean
+  pollingIntervalId: ReturnType<typeof setInterval> | null
 
   // Actions
   setNotifications: (notifications: NotificationDTO[]) => void
@@ -21,7 +23,14 @@ interface NotificationState {
   markAllAsRead: () => void
   removeNotification: (notificationId: string) => void
   reset: () => void
+
+  // Polling actions
+  startPolling: () => void
+  stopPolling: () => void
+  fetchUnreadCount: () => Promise<void>
 }
+
+const POLLING_INTERVAL = 30000 // 30 seconds
 
 const initialState = {
   notifications: [],
@@ -29,9 +38,11 @@ const initialState = {
   isLoading: false,
   isDropdownOpen: false,
   lastFetched: null,
+  isPollingActive: false,
+  pollingIntervalId: null,
 }
 
-export const useNotificationStore = create<NotificationState>((set) => ({
+export const useNotificationStore = create<NotificationState>((set, get) => ({
   ...initialState,
 
   setNotifications: (notifications) =>
@@ -76,5 +87,64 @@ export const useNotificationStore = create<NotificationState>((set) => ({
       }
     }),
 
-  reset: () => set(initialState),
+  reset: () => {
+    const state = get()
+    if (state.pollingIntervalId) {
+      clearInterval(state.pollingIntervalId)
+    }
+    set(initialState)
+  },
+
+  fetchUnreadCount: async () => {
+    try {
+      const res = await fetch('/api/notifications?countOnly=true')
+      if (res.ok) {
+        const data = await res.json()
+        set({ unreadCount: data.count || 0, lastFetched: new Date() })
+      }
+    } catch {
+      // Silently fail
+    }
+  },
+
+  startPolling: () => {
+    const state = get()
+
+    // Prevent multiple polling instances
+    if (state.isPollingActive || state.pollingIntervalId) {
+      return
+    }
+
+    // Fetch immediately
+    get().fetchUnreadCount()
+
+    // Set up interval
+    const intervalId = setInterval(() => {
+      // Only poll if document is visible
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        get().fetchUnreadCount()
+      }
+    }, POLLING_INTERVAL)
+
+    set({ isPollingActive: true, pollingIntervalId: intervalId })
+
+    // Handle visibility changes
+    if (typeof document !== 'undefined') {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          // Fetch when tab becomes visible
+          get().fetchUnreadCount()
+        }
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+    }
+  },
+
+  stopPolling: () => {
+    const state = get()
+    if (state.pollingIntervalId) {
+      clearInterval(state.pollingIntervalId)
+    }
+    set({ isPollingActive: false, pollingIntervalId: null })
+  },
 }))

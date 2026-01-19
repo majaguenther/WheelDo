@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { MapPin, X, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { useClickOutside } from '@/hooks/use-click-outside'
 
 interface GeoapifyResult {
   properties: {
@@ -52,8 +53,13 @@ export function LocationAutocomplete({
   const [isFocused, setIsFocused] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState<LocationValue | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Use click outside hook to close dropdown
+  const containerRef = useClickOutside<HTMLDivElement>(
+    () => setIsFocused(false),
+    isFocused
+  )
 
   const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY
 
@@ -71,17 +77,6 @@ export function LocationAutocomplete({
     }
   }, [])
 
-  // Handle clicks outside to close dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsFocused(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   const fetchSuggestions = useCallback(async (query: string) => {
     if (!query || query.length < 2 || !apiKey) {

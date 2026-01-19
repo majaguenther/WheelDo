@@ -1,4 +1,4 @@
-import type { Urgency, Effort, TaskStatus } from '@/generated/prisma/client'
+import type { Urgency, Effort, TaskStatus, RecurrenceType } from '@/generated/prisma/client'
 import type { CategoryDTO } from './category.types'
 import type { UserDTO } from './user.types'
 
@@ -27,6 +27,7 @@ export interface TaskDTO {
   duration: number | null
   deadline: Date | null
   location: string | null
+  recurrenceType: RecurrenceType
   completedAt: Date | null
   position: number
   categoryId: string | null
@@ -42,9 +43,18 @@ export interface TaskDTO {
 }
 
 /**
+ * Collaborator with user details
+ */
+export interface CollaboratorDTO {
+  id: string
+  user: UserDTO
+  canEdit: boolean
+}
+
+/**
  * Task with full details including collaborators
  */
 export interface TaskDetailDTO extends TaskDTO {
-  collaborators: Array<UserDTO & { canEdit: boolean }>
+  collaborators: CollaboratorDTO[]
   parent: { id: string; title: string } | null
 }

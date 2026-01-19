@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth-server'
 import { AppShell } from '@/components/ui/app-shell'
 
-export default async function DashboardLayout({
+export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode

@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentUser } from '@/data/auth'
 import { categoryNameExists } from '@/data/categories'
@@ -51,8 +51,7 @@ export async function createCategory(
       },
     })
 
-    revalidatePath('/settings')
-    revalidatePath('/dashboard')
+    revalidateTag('categories', 'max')
 
     return { categoryId: category.id }
   })
@@ -106,8 +105,7 @@ export async function updateCategory(
       data: validated,
     })
 
-    revalidatePath('/settings')
-    revalidatePath('/dashboard')
+    revalidateTag('categories', 'max')
 
     return { categoryId: validatedId.data }
   })
@@ -140,10 +138,8 @@ export async function deleteCategory(
 
     await db.category.delete({ where: { id: validatedId.data } })
 
-    revalidatePath('/settings')
-    revalidatePath('/dashboard')
-    revalidatePath('/wheel')
-    revalidatePath('/history')
+    revalidateTag('categories', 'max')
+    revalidateTag('tasks', 'max')
 
     return { success: true }
   })

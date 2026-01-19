@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { History as HistoryIcon } from 'lucide-react'
-import { getCompletedTasks } from '@/data/tasks'
-import { LoadingPage } from '@/components/ui/loading'
+import { getCurrentUser } from '@/data/auth'
+import { getCompletedTasksForUser } from '@/data/tasks'
+import { HistorySkeleton } from '@/components/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/ui/badge'
 import { HistoryList } from '@/components/features/history-list'
@@ -11,7 +12,10 @@ export const metadata = {
 }
 
 async function HistoryContent() {
-  const tasks = await getCompletedTasks()
+  const user = await getCurrentUser()
+  if (!user) return null
+
+  const tasks = await getCompletedTasksForUser(user.id)
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
@@ -50,7 +54,7 @@ async function HistoryContent() {
 
 export default function HistoryPage() {
   return (
-    <Suspense fallback={<LoadingPage />}>
+    <Suspense fallback={<HistorySkeleton />}>
       <HistoryContent />
     </Suspense>
   )

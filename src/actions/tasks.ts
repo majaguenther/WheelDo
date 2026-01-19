@@ -1,12 +1,11 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { db } from '@/lib/db'
 import { getCurrentUser } from '@/data/auth'
-import { getTaskRole, canEditTask, isTaskOwner } from '@/data/tasks'
+import { canEditTask, isTaskOwner } from '@/data/tasks'
 import {
   ActionError,
-  actionSuccess,
   actionError,
   withActionErrorHandling,
   type ActionResult,
@@ -16,8 +15,6 @@ import {
   updateTaskSchema,
   updateTaskStatusSchema,
   taskIdSchema,
-  type CreateTaskInput,
-  type UpdateTaskInput,
 } from '@/core/validation/schemas'
 
 /**
@@ -84,9 +81,7 @@ export async function createTask(input: unknown): Promise<ActionResult<{ taskId:
     })
 
     // 6. Revalidate cache
-    revalidatePath('/dashboard')
-    revalidatePath('/wheel')
-    revalidatePath('/history')
+    revalidateTag('tasks', 'max')
 
     return { taskId: task.id }
   })
@@ -168,9 +163,7 @@ export async function updateTask(
       },
     })
 
-    revalidatePath('/dashboard')
-    revalidatePath('/wheel')
-    revalidatePath('/history')
+    revalidateTag('tasks', 'max')
 
     return { taskId: validatedId.data }
   })
@@ -227,9 +220,7 @@ export async function updateTaskStatus(input: unknown): Promise<ActionResult<{ s
       },
     })
 
-    revalidatePath('/dashboard')
-    revalidatePath('/wheel')
-    revalidatePath('/history')
+    revalidateTag('tasks', 'max')
 
     return { success: true }
   })
@@ -258,9 +249,7 @@ export async function deleteTask(taskId: unknown): Promise<ActionResult<{ succes
 
     await db.task.delete({ where: { id: validatedId.data } })
 
-    revalidatePath('/dashboard')
-    revalidatePath('/wheel')
-    revalidatePath('/history')
+    revalidateTag('tasks', 'max')
 
     return { success: true }
   })

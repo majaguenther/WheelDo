@@ -2,8 +2,8 @@ import { Suspense } from 'react'
 import Image from 'next/image'
 import { User, Palette, FolderOpen, Shield } from 'lucide-react'
 import { getCurrentUser } from '@/data/auth'
-import { getCategories } from '@/data/categories'
-import { LoadingPage } from '@/components/ui/loading'
+import { getCategoriesForUser } from '@/data/categories'
+import { SettingsSkeleton } from '@/components/skeletons'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { CategoryManager } from '@/components/features/category-manager'
 import { SignOutButton } from '@/components/features/sign-out-button'
@@ -15,7 +15,10 @@ export const metadata = {
 }
 
 async function SettingsContent() {
-  const [user, categories] = await Promise.all([getCurrentUser(), getCategories()])
+  const user = await getCurrentUser()
+  if (!user) return null
+
+  const categories = await getCategoriesForUser(user.id)
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-2xl mx-auto">
@@ -112,7 +115,7 @@ async function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<LoadingPage />}>
+    <Suspense fallback={<SettingsSkeleton />}>
       <SettingsContent />
     </Suspense>
   )

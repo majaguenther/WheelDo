@@ -65,11 +65,14 @@ export function ThemeProvider({
     setPreviewThemeId(null)
   }, [])
 
-  // Save theme to database
+  // Save theme to database and cookie
   const setTheme = useCallback(
     async (id: ThemeId) => {
       startTransition(async () => {
         try {
+          // Set cookie immediately for fast subsequent page loads
+          document.cookie = `theme=${id};path=/;max-age=31536000;samesite=lax`
+
           const response = await fetch('/api/user/theme', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },

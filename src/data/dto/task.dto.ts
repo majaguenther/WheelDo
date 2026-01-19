@@ -12,7 +12,7 @@ type TaskWithRelations = Task & {
   children: Task[]
   collaborators: (TaskCollaborator & { user: Pick<User, 'id' | 'name' | 'email' | 'image'> })[]
   user: Pick<User, 'id' | 'name' | 'email' | 'image'>
-  parent?: Task | null
+  parent?: Task | { id: string; title: string } | null
 }
 
 /**
@@ -65,6 +65,7 @@ export function toTaskDTO(task: TaskWithRelations, viewerId: string): TaskDTO | 
     duration: task.duration,
     deadline: task.deadline,
     location: task.location,
+    recurrenceType: task.recurrenceType,
     completedAt: task.completedAt,
     position: task.position,
     categoryId: task.categoryId,
@@ -98,7 +99,8 @@ export function toTaskDetailDTO(task: TaskWithRelations, viewerId: string): Task
   return {
     ...baseDTO,
     collaborators: task.collaborators.map((c) => ({
-      ...toUserDTO(c.user),
+      id: c.id,
+      user: toUserDTO(c.user),
       canEdit: c.canEdit,
     })),
     parent: task.parent ? { id: task.parent.id, title: task.parent.title } : null,

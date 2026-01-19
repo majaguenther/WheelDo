@@ -89,7 +89,7 @@ export const TaskCard = memo(function TaskCard({
 
   const handleDefer = (e: React.MouseEvent) => {
     e.stopPropagation()
-    onStatusChange?.(task.id, 'PENDING')
+    onStatusChange?.(task.id, 'DEFERRED')
   }
 
   const handleComplete = (e: React.MouseEvent) => {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { db } from '@/lib/db'
-import { canViewTask, isTaskOwner } from '@/lib/task-authorization'
+import { canViewTaskById, isTaskOwnerById } from '@/data/tasks'
 import { createNotification } from '@/lib/notifications'
 
 export async function GET(
@@ -18,7 +18,7 @@ export async function GET(
     const { id: taskId } = await params
 
     // Check if user can view the task
-    const canView = await canViewTask(session.user.id, taskId)
+    const canView = await canViewTaskById(session.user.id, taskId)
     if (!canView) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
@@ -88,7 +88,7 @@ export async function DELETE(
     }
 
     // Check authorization
-    const isOwner = await isTaskOwner(session.user.id, taskId)
+    const isOwner = await isTaskOwnerById(session.user.id, taskId)
     const isSelf = targetUserId === session.user.id
 
     if (!isOwner && !isSelf) {
@@ -164,7 +164,7 @@ export async function PATCH(
     }
 
     // Only owner can change permissions
-    const isOwner = await isTaskOwner(session.user.id, taskId)
+    const isOwner = await isTaskOwnerById(session.user.id, taskId)
     if (!isOwner) {
       return NextResponse.json(
         { error: 'Only the task owner can change collaborator permissions' },

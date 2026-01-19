@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, CircleDot, History } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
+import { NavLink } from './nav-link'
 import { UserProfileMenu } from './user-profile-menu'
 import { NotificationBell } from '@/components/features/notification-bell'
 
@@ -36,18 +36,18 @@ export function Sidebar() {
             const isActive = pathname === href || pathname.startsWith(`${href}/`)
             return (
               <li key={href}>
-                <Link
+                <NavLink
                   href={href}
+                  icon={<Icon className="h-5 w-5" />}
+                  isActive={isActive}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
+                  activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
                 >
-                  <Icon className="h-5 w-5" />
                   {label}
-                </Link>
+                </NavLink>
               </li>
             )
           })}

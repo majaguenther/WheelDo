@@ -1,8 +1,9 @@
 import { Suspense } from 'react'
 import { Clock, AlertCircle } from 'lucide-react'
-import { getWheelEligibleTasks, getActiveTask } from '@/data/tasks'
+import { getCurrentUser } from '@/data/auth'
+import { getWheelEligibleTasksForUser, getActiveTaskForUser } from '@/data/tasks'
 import { SpinWheel } from '@/components/features/spin-wheel'
-import { LoadingPage } from '@/components/ui/loading'
+import { WheelSkeleton } from '@/components/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DurationFilter } from '@/components/features/duration-filter'
 
@@ -15,12 +16,16 @@ interface WheelPageProps {
 }
 
 async function WheelContent({ searchParams }: WheelPageProps) {
+  const user = await getCurrentUser()
+  if (!user) return null
+
   const params = await searchParams
   const maxDuration = params.maxDuration ? parseInt(params.maxDuration, 10) : undefined
 
+  // Fetch in parallel
   const [tasks, activeTask] = await Promise.all([
-    getWheelEligibleTasks(maxDuration),
-    getActiveTask(),
+    getWheelEligibleTasksForUser(user.id, maxDuration),
+    getActiveTaskForUser(user.id),
   ])
 
   // If there's an active task, show a warning
@@ -103,7 +108,7 @@ async function WheelContent({ searchParams }: WheelPageProps) {
 
 export default function WheelPage(props: WheelPageProps) {
   return (
-    <Suspense fallback={<LoadingPage />}>
+    <Suspense fallback={<WheelSkeleton />}>
       <WheelContent {...props} />
     </Suspense>
   )

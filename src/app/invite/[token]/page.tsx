@@ -1,4 +1,3 @@
-import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getSession } from '@/lib/auth-server'
 import { validateInvite } from '@/lib/invites'
@@ -87,7 +86,7 @@ export default async function InvitePage({ params }: Props) {
         {/* Invite card */}
         <div className="bg-card border rounded-xl p-6 shadow-sm space-y-6">
           <div className="text-center space-y-2">
-            <h2 className="text-xl font-semibold">You've been invited!</h2>
+            <h2 className="text-xl font-semibold">You&apos;ve been invited!</h2>
             <p className="text-muted-foreground text-sm">
               to collaborate on a task
             </p>

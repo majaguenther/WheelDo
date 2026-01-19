@@ -1,56 +1,25 @@
 import { Suspense } from 'react'
 import { CircleDot } from 'lucide-react'
-import { getTasks, getActiveTask } from '@/data/tasks'
-import { getCategories } from '@/data/categories'
 import { getCurrentUser } from '@/data/auth'
-import { db } from '@/lib/db'
+import { getTasksForUser, getActiveTaskForUser } from '@/data/tasks'
+import { getCategoriesForUser } from '@/data/categories'
 import { TaskList } from '@/components/features/task-list'
-import { LoadingPage } from '@/components/ui/loading'
+import { DashboardSkeleton } from '@/components/skeletons'
 import { CreateTaskButton } from '@/components/features/create-task-button'
 
 export const metadata = {
   title: 'Dashboard',
 }
 
-// Default categories to create for new users
-const DEFAULT_CATEGORIES = [
-  { name: 'Work', color: '#3b82f6', icon: 'briefcase' },
-  { name: 'Personal', color: '#8b5cf6', icon: 'user' },
-  { name: 'Health', color: '#22c55e', icon: 'heart' },
-  { name: 'Finance', color: '#eab308', icon: 'wallet' },
-  { name: 'Home', color: '#f97316', icon: 'home' },
-]
-
-async function ensureDefaultCategories(userId: string) {
-  const existingCount = await db.category.count({
-    where: { userId },
-  })
-
-  if (existingCount === 0) {
-    await db.category.createMany({
-      data: DEFAULT_CATEGORIES.map((cat) => ({
-        ...cat,
-        userId,
-      })),
-    })
-  }
-}
-
 async function DashboardContent() {
   const user = await getCurrentUser()
+  if (!user) return null
 
-  if (!user) {
-    return null
-  }
-
-  // Ensure default categories exist for new users
-  await ensureDefaultCategories(user.id)
-
-  // Fetch data using DAL functions (all with built-in auth checks)
+  // ALL data fetched in parallel - no sequential blocking
   const [tasks, activeTask, categories] = await Promise.all([
-    getTasks(),
-    getActiveTask(),
-    getCategories(),
+    getTasksForUser(user.id),
+    getActiveTaskForUser(user.id),
+    getCategoriesForUser(user.id),
   ])
 
   // Filter to show only pending and in-progress tasks
@@ -105,7 +74,7 @@ async function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<LoadingPage />}>
+    <Suspense fallback={<DashboardSkeleton />}>
       <DashboardContent />
     </Suspense>
   )

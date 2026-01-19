@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Play, Pause, Check, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ShareTaskModal } from './share-task-modal'
-import { updateTaskStatus, deleteTask as deleteTaskAction } from '@/actions/tasks'
+import { startTask, completeTask, deferTask, revertTask, deleteTask as deleteTaskAction } from '@/actions/tasks'
 import type { TaskStatus } from '@/generated/prisma/client'
 
 interface TaskActionsProps {
@@ -26,7 +26,24 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
 
   const handleUpdateStatus = async (status: TaskStatus) => {
     startTransition(async () => {
-      const result = await updateTaskStatus({ taskId: task.id, status })
+      let result
+      switch (status) {
+        case 'IN_PROGRESS':
+          result = await startTask(task.id)
+          break
+        case 'COMPLETED':
+          result = await completeTask(task.id)
+          break
+        case 'DEFERRED':
+          result = await deferTask(task.id)
+          break
+        case 'PENDING':
+          result = await revertTask(task.id)
+          break
+        default:
+          console.error('Unknown status:', status)
+          return
+      }
 
       if (!result.success) {
         console.error('Failed to update task:', result.error.message)
@@ -73,7 +90,7 @@ export function TaskActions({ task, role = 'owner' }: TaskActionsProps) {
 
         {canEdit && isInProgress && (
           <>
-            <Button onClick={() => handleUpdateStatus('PENDING')} variant="outline" className="gap-2">
+            <Button onClick={() => handleUpdateStatus('DEFERRED')} variant="outline" className="gap-2">
               <Pause className="h-4 w-4" />
               Defer
             </Button>

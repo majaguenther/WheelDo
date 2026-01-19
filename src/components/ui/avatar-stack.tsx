@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils'
 import { Avatar } from './avatar'
-import { getAvatarColor } from '@/lib/avatar-colors'
 
 interface User {
   id: string
