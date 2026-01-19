@@ -38,21 +38,23 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
     null
   )
 
-  // Handle successful create
+  // Handle successful create - this is a legitimate pattern for useActionState
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (createState?.success) {
       setIsAddModalOpen(false)
       setSelectedColor(DEFAULT_COLORS[0])
       router.refresh()
     }
-  }, [createState?.success, router])
+  }, [createState, router])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Handle successful delete
   useEffect(() => {
     if (deleteState?.success) {
       router.refresh()
     }
-  }, [deleteState?.success, router])
+  }, [deleteState, router])
 
   const isPending = isCreatePending || isDeletePending
 

@@ -49,8 +49,9 @@ export async function updateCollaboratorPermission(
             },
         })
 
-        // Invalidate cache for the collaborator whose permissions changed
-        revalidateTag(`tasks:${targetUserId}`, 'max')
+        // Invalidate cache for both the owner (viewing the task) and the collaborator
+        revalidateTag(`tasks:${user.id}`, 'max')      // Owner's cache (so task detail page refreshes)
+        revalidateTag(`tasks:${targetUserId}`, 'max') // Collaborator's cache
 
         return {
             collaborator: {
@@ -129,9 +130,10 @@ export async function removeCollaborator(
         }
 
         // Invalidate caches for affected users
-        revalidateTag(`tasks:${targetUserId}`, 'max') // Removed collaborator
-        if (task) {
-            revalidateTag(`tasks:${task.userId}`, 'max') // Task owner
+        revalidateTag(`tasks:${user.id}`, 'max')         // Current user (who performed the removal)
+        revalidateTag(`tasks:${targetUserId}`, 'max')    // Removed collaborator
+        if (task && task.userId !== user.id) {
+            revalidateTag(`tasks:${task.userId}`, 'max') // Task owner (if different from current user)
         }
 
         return {success: true}
