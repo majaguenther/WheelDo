@@ -1,14 +1,11 @@
 'use client'
 
-import { useTransition, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 import { TaskCard } from './task-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { ListTodo, Plus } from 'lucide-react'
-import { startTask, completeTask, deferTask, revertTask } from '@/actions/tasks'
 import type { TaskDTO } from '@/data/dto/task.types'
-import type { TaskStatus } from '@/generated/prisma/client'
 
 interface TaskListProps {
   tasks: TaskDTO[]
@@ -17,9 +14,6 @@ interface TaskListProps {
 }
 
 export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-
   // Memoize active task lookup
   const activeTask = useMemo(
     () => tasks.find((t) => t.id === activeTaskId),
@@ -37,39 +31,6 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
   const filteredTasks = useMemo(() => {
     return otherTasks.filter((task) => task.status !== 'COMPLETED')
   }, [otherTasks])
-
-  // Memoize status change handler
-  const handleStatusChange = useCallback(
-    async (taskId: string, status: TaskStatus) => {
-      startTransition(async () => {
-        let result
-        switch (status) {
-          case 'IN_PROGRESS':
-            result = await startTask(taskId)
-            break
-          case 'COMPLETED':
-            result = await completeTask(taskId)
-            break
-          case 'DEFERRED':
-            result = await deferTask(taskId)
-            break
-          case 'PENDING':
-            result = await revertTask(taskId)
-            break
-          default:
-            console.error('Unknown status:', status)
-            return
-        }
-
-        if (!result.success) {
-          console.error('Failed to update task:', result.error.message)
-        }
-
-        router.refresh()
-      })
-    },
-    [router]
-  )
 
   if (tasks.length === 0) {
     return (
@@ -90,28 +51,21 @@ export function TaskList({ tasks, activeTaskId, onCreateTask }: TaskListProps) {
   }
 
   return (
-    <div className={isPending ? 'opacity-50 pointer-events-none' : ''}>
+    <div>
       {/* Active task */}
       {activeTask && (
         <div className="mb-6">
           <h2 className="text-sm font-medium text-muted-foreground mb-3">
             Currently Working On
           </h2>
-          <TaskCard
-            task={activeTask}
-            onStatusChange={handleStatusChange}
-          />
+          <TaskCard task={activeTask} />
         </div>
       )}
 
       {/* Task list */}
       <div className="space-y-3">
         {filteredTasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onStatusChange={handleStatusChange}
-          />
+          <TaskCard key={task.id} task={task} />
         ))}
       </div>
 

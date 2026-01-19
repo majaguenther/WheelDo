@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RotateCcw, Calendar, Clock, Search, Check, Trash2 } from 'lucide-react'
 import { cn, formatDuration } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/ui/submit-button'
 import { Badge } from '@/components/ui/badge'
-import { revertTask, deleteTask } from '@/actions/tasks'
+import { revertTaskFormAction, deleteTaskFormAction } from '@/actions/tasks'
 import type { TaskDTO } from '@/data/dto/task.types'
 
 interface HistoryListProps {
@@ -16,8 +16,26 @@ interface HistoryListProps {
 
 export function HistoryList({ tasks }: HistoryListProps) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const [search, setSearch] = useState('')
+
+  // Action states
+  const [revertState, revertAction, isRevertPending] = useActionState(revertTaskFormAction, null)
+  const [deleteState, deleteAction, isDeletePending] = useActionState(deleteTaskFormAction, null)
+
+  // Refresh on success
+  useEffect(() => {
+    if (revertState?.success || deleteState?.success) {
+      router.refresh()
+    }
+  }, [revertState?.success, deleteState?.success, router])
+
+  // Log errors
+  useEffect(() => {
+    if (revertState?.error) console.error('Failed to revert task:', revertState.error.message)
+    if (deleteState?.error) console.error('Failed to delete task:', deleteState.error.message)
+  }, [revertState?.error, deleteState?.error])
+
+  const isPending = isRevertPending || isDeletePending
 
   const filteredTasks = tasks.filter((task) =>
     task.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,30 +59,6 @@ export function HistoryList({ tasks }: HistoryListProps) {
     groups[date].push(task)
     return groups
   }, {} as Record<string, TaskDTO[]>)
-
-  const handleRevert = async (taskId: string) => {
-    startTransition(async () => {
-      const result = await revertTask(taskId)
-      if (!result.success) {
-        console.error('Failed to revert task:', result.error.message)
-      }
-      router.refresh()
-    })
-  }
-
-  const handleDelete = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task permanently?')) {
-      return
-    }
-
-    startTransition(async () => {
-      const result = await deleteTask(taskId)
-      if (!result.success) {
-        console.error('Failed to delete task:', result.error.message)
-      }
-      router.refresh()
-    })
-  }
 
   return (
     <div className={cn(isPending && 'opacity-50 pointer-events-none')}>
@@ -135,24 +129,35 @@ export function HistoryList({ tasks }: HistoryListProps) {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRevert(task.id)}
-                      title="Revert to pending"
-                      className="h-8 w-8"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDelete(task.id)}
-                      title="Delete permanently"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <form action={revertAction}>
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <SubmitButton
+                        size="icon"
+                        variant="ghost"
+                        pendingText=""
+                        title="Revert to pending"
+                        className="h-8 w-8"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </SubmitButton>
+                    </form>
+                    <form action={deleteAction}>
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <SubmitButton
+                        size="icon"
+                        variant="ghost"
+                        pendingText=""
+                        title="Delete permanently"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          if (!confirm('Are you sure you want to delete this task permanently?')) {
+                            e.preventDefault()
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </SubmitButton>
+                    </form>
                   </div>
                 </div>
               ))}

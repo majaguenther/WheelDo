@@ -59,12 +59,16 @@ export const requireAuthOrThrow = cache(async (): Promise<CurrentUser> => {
   return user
 })
 
-// Utility for invite URLs (replaces src/lib/url.ts)
+/**
+ * Get the base URL for the application.
+ * Uses Vercel's built-in env vars for automatic configuration.
+ */
 export function getBaseUrl(): string {
-  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   }
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
   return 'http://localhost:3000'
 }

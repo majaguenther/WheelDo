@@ -9,6 +9,7 @@ import {
   withActionErrorHandling,
   type ActionResult,
 } from '@/core/errors/action-error'
+import { toActionState, type ActionState } from '@/core/errors/action-state'
 import {
   createCategorySchema,
   updateCategorySchema,
@@ -143,4 +144,56 @@ export async function deleteCategory(
 
     return { success: true }
   })
+}
+
+// =============================================================================
+// FormData-based Server Actions for useActionState / form action pattern
+// =============================================================================
+
+/**
+ * Create a new category via FormData (for use with form action)
+ */
+export async function createCategoryFormAction(
+  _prevState: ActionState<{ categoryId: string }>,
+  formData: FormData
+): Promise<ActionState<{ categoryId: string }>> {
+  const input = {
+    name: formData.get('name') as string,
+    color: formData.get('color') as string,
+    icon: (formData.get('icon') as string) || undefined,
+  }
+
+  const result = await createCategory(input)
+  return toActionState(result)
+}
+
+/**
+ * Update an existing category via FormData (for use with form action)
+ * categoryId is bound to the action via .bind(null, categoryId)
+ */
+export async function updateCategoryFormAction(
+  categoryId: string,
+  _prevState: ActionState<{ categoryId: string }>,
+  formData: FormData
+): Promise<ActionState<{ categoryId: string }>> {
+  const input = {
+    name: (formData.get('name') as string) || undefined,
+    color: (formData.get('color') as string) || undefined,
+    icon: (formData.get('icon') as string) || undefined,
+  }
+
+  const result = await updateCategory(categoryId, input)
+  return toActionState(result)
+}
+
+/**
+ * Delete a category via FormData (for use with form action)
+ */
+export async function deleteCategoryFormAction(
+  _prevState: ActionState<{ success: true }>,
+  formData: FormData
+): Promise<ActionState<{ success: true }>> {
+  const categoryId = formData.get('categoryId') as string
+  const result = await deleteCategory(categoryId)
+  return toActionState(result)
 }

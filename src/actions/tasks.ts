@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidateTag } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth-server'
 import { canEditTask, isTaskOwner } from '@/data/tasks'
@@ -10,6 +11,7 @@ import {
   withActionErrorHandling,
   type ActionResult,
 } from '@/core/errors/action-error'
+import { toActionState, type ActionState } from '@/core/errors/action-state'
 import {
   createTaskSchema,
   updateTaskSchema,
@@ -368,4 +370,134 @@ export async function revertTask(taskId: unknown): Promise<ActionResult<{ succes
     return actionError('VALIDATION_ERROR', 'Invalid task ID')
   }
   return updateTaskStatus({ taskId: validatedId.data, status: 'PENDING' })
+}
+
+// =============================================================================
+// FormData-based Server Actions for useActionState / form action pattern
+// =============================================================================
+
+/**
+ * Create a new task via FormData (for use with form action)
+ */
+export async function createTaskFormAction(
+  _prevState: ActionState<{ taskId: string }>,
+  formData: FormData
+): Promise<ActionState<{ taskId: string }>> {
+  const input = {
+    title: formData.get('title') as string,
+    body: (formData.get('body') as string) || undefined,
+    duration: formData.get('duration') ? Number(formData.get('duration')) : undefined,
+    urgency: (formData.get('urgency') as string) || undefined,
+    effort: (formData.get('effort') as string) || undefined,
+    deadline: (formData.get('deadline') as string) || undefined,
+    categoryId: (formData.get('categoryId') as string) || undefined,
+    parentId: (formData.get('parentId') as string) || undefined,
+    location: (formData.get('location') as string) || undefined,
+    recurrenceType: (formData.get('recurrenceType') as string) || undefined,
+  }
+
+  const result = await createTask(input)
+
+  if (result.success) {
+    // Redirect happens after revalidation (which is already in createTask)
+    redirect(`/tasks/${result.data.taskId}`)
+  }
+
+  return toActionState(result)
+}
+
+/**
+ * Update an existing task via FormData (for use with form action)
+ * taskId is bound to the action via .bind(null, taskId)
+ */
+export async function updateTaskFormAction(
+  taskId: string,
+  _prevState: ActionState<{ taskId: string }>,
+  formData: FormData
+): Promise<ActionState<{ taskId: string }>> {
+  const input = {
+    title: formData.get('title') as string,
+    body: (formData.get('body') as string) || undefined,
+    duration: formData.get('duration') ? Number(formData.get('duration')) : undefined,
+    urgency: (formData.get('urgency') as string) || undefined,
+    effort: (formData.get('effort') as string) || undefined,
+    deadline: (formData.get('deadline') as string) || undefined,
+    categoryId: (formData.get('categoryId') as string) || undefined,
+    parentId: (formData.get('parentId') as string) || undefined,
+    location: (formData.get('location') as string) || undefined,
+    recurrenceType: (formData.get('recurrenceType') as string) || undefined,
+  }
+
+  const result = await updateTask(taskId, input)
+  return toActionState(result)
+}
+
+/**
+ * Start a task via FormData (for use with form action)
+ */
+export async function startTaskFormAction(
+  _prevState: ActionState<{ success: true }>,
+  formData: FormData
+): Promise<ActionState<{ success: true }>> {
+  const taskId = formData.get('taskId') as string
+  const result = await startTask(taskId)
+  return toActionState(result)
+}
+
+/**
+ * Complete a task via FormData (for use with form action)
+ */
+export async function completeTaskFormAction(
+  _prevState: ActionState<{ success: true }>,
+  formData: FormData
+): Promise<ActionState<{ success: true }>> {
+  const taskId = formData.get('taskId') as string
+  const result = await completeTask(taskId)
+
+  if (result.success) {
+    redirect('/dashboard')
+  }
+
+  return toActionState(result)
+}
+
+/**
+ * Defer a task via FormData (for use with form action)
+ */
+export async function deferTaskFormAction(
+  _prevState: ActionState<{ success: true }>,
+  formData: FormData
+): Promise<ActionState<{ success: true }>> {
+  const taskId = formData.get('taskId') as string
+  const result = await deferTask(taskId)
+  return toActionState(result)
+}
+
+/**
+ * Revert a task via FormData (for use with form action)
+ */
+export async function revertTaskFormAction(
+  _prevState: ActionState<{ success: true }>,
+  formData: FormData
+): Promise<ActionState<{ success: true }>> {
+  const taskId = formData.get('taskId') as string
+  const result = await revertTask(taskId)
+  return toActionState(result)
+}
+
+/**
+ * Delete a task via FormData (for use with form action)
+ */
+export async function deleteTaskFormAction(
+  _prevState: ActionState<{ success: true }>,
+  formData: FormData
+): Promise<ActionState<{ success: true }>> {
+  const taskId = formData.get('taskId') as string
+  const result = await deleteTask(taskId)
+
+  if (result.success) {
+    redirect('/dashboard')
+  }
+
+  return toActionState(result)
 }

@@ -1,11 +1,18 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Play, Pause, Check, Trash2, Users, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/ui/submit-button'
 import { ShareTaskModal } from './share-task-modal'
-import { startTask, completeTask, deferTask, revertTask, deleteTask as deleteTaskAction } from '@/actions/tasks'
+import {
+  startTaskFormAction,
+  completeTaskFormAction,
+  deferTaskFormAction,
+  revertTaskFormAction,
+  deleteTaskFormAction,
+} from '@/actions/tasks'
 import type { TaskStatus } from '@/generated/prisma/client'
 
 interface TaskActionsProps {
@@ -20,61 +27,34 @@ interface TaskActionsProps {
 
 export function TaskActions({ task, role = 'owner', onEditClick }: TaskActionsProps) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const [showShareModal, setShowShareModal] = useState(false)
   const isOwner = role === 'owner'
   const canEdit = role === 'owner' || role === 'editor'
 
-  const handleUpdateStatus = async (status: TaskStatus) => {
-    startTransition(async () => {
-      let result
-      switch (status) {
-        case 'IN_PROGRESS':
-          result = await startTask(task.id)
-          break
-        case 'COMPLETED':
-          result = await completeTask(task.id)
-          break
-        case 'DEFERRED':
-          result = await deferTask(task.id)
-          break
-        case 'PENDING':
-          result = await revertTask(task.id)
-          break
-        default:
-          console.error('Unknown status:', status)
-          return
-      }
+  // Action states for each operation
+  const [startState, startAction, isStartPending] = useActionState(startTaskFormAction, null)
+  const [completeState, completeAction, isCompletePending] = useActionState(completeTaskFormAction, null)
+  const [deferState, deferAction, isDeferPending] = useActionState(deferTaskFormAction, null)
+  const [revertState, revertAction, isRevertPending] = useActionState(revertTaskFormAction, null)
+  const [deleteState, deleteAction, isDeletePending] = useActionState(deleteTaskFormAction, null)
 
-      if (!result.success) {
-        console.error('Failed to update task:', result.error.message)
-        return
-      }
-
+  // Refresh router on success (for non-redirect actions)
+  useEffect(() => {
+    if (startState?.success || deferState?.success || revertState?.success) {
       router.refresh()
-      if (status === 'COMPLETED') {
-        router.push('/dashboard')
-      }
-    })
-  }
-
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-      return
     }
+  }, [startState?.success, deferState?.success, revertState?.success, router])
 
-    startTransition(async () => {
-      const result = await deleteTaskAction(task.id)
+  // Log errors to console
+  useEffect(() => {
+    if (startState?.error) console.error('Failed to start task:', startState.error.message)
+    if (completeState?.error) console.error('Failed to complete task:', completeState.error.message)
+    if (deferState?.error) console.error('Failed to defer task:', deferState.error.message)
+    if (revertState?.error) console.error('Failed to revert task:', revertState.error.message)
+    if (deleteState?.error) console.error('Failed to delete task:', deleteState.error.message)
+  }, [startState?.error, completeState?.error, deferState?.error, revertState?.error, deleteState?.error])
 
-      if (!result.success) {
-        console.error('Failed to delete task:', result.error.message)
-        return
-      }
-
-      router.push('/dashboard')
-      router.refresh()
-    })
-  }
+  const isPending = isStartPending || isCompletePending || isDeferPending || isRevertPending || isDeletePending
 
   const isInProgress = task.status === 'IN_PROGRESS'
   const isCompleted = task.status === 'COMPLETED'
@@ -90,30 +70,45 @@ export function TaskActions({ task, role = 'owner', onEditClick }: TaskActionsPr
           </Button>
         )}
 
+        {/* Start Task */}
         {canEdit && !isCompleted && !isInProgress && (
-          <Button onClick={() => handleUpdateStatus('IN_PROGRESS')} className="gap-2">
-            <Play className="h-4 w-4" />
-            Start Task
-          </Button>
+          <form action={startAction}>
+            <input type="hidden" name="taskId" value={task.id} />
+            <SubmitButton className="gap-2" pendingText="Starting...">
+              <Play className="h-4 w-4" />
+              Start Task
+            </SubmitButton>
+          </form>
         )}
 
+        {/* Defer and Complete (when in progress) */}
         {canEdit && isInProgress && (
           <>
-            <Button onClick={() => handleUpdateStatus('DEFERRED')} variant="outline" className="gap-2">
-              <Pause className="h-4 w-4" />
-              Defer
-            </Button>
-            <Button onClick={() => handleUpdateStatus('COMPLETED')} className="gap-2">
-              <Check className="h-4 w-4" />
-              Complete
-            </Button>
+            <form action={deferAction}>
+              <input type="hidden" name="taskId" value={task.id} />
+              <SubmitButton variant="outline" className="gap-2" pendingText="Deferring...">
+                <Pause className="h-4 w-4" />
+                Defer
+              </SubmitButton>
+            </form>
+            <form action={completeAction}>
+              <input type="hidden" name="taskId" value={task.id} />
+              <SubmitButton className="gap-2" pendingText="Completing...">
+                <Check className="h-4 w-4" />
+                Complete
+              </SubmitButton>
+            </form>
           </>
         )}
 
+        {/* Reopen (when completed) */}
         {canEdit && isCompleted && (
-          <Button onClick={() => handleUpdateStatus('PENDING')} variant="outline" className="gap-2">
-            Reopen Task
-          </Button>
+          <form action={revertAction}>
+            <input type="hidden" name="taskId" value={task.id} />
+            <SubmitButton variant="outline" className="gap-2" pendingText="Reopening...">
+              Reopen Task
+            </SubmitButton>
+          </form>
         )}
 
         {/* Share button - visible to everyone but full control for owner */}
@@ -126,11 +121,24 @@ export function TaskActions({ task, role = 'owner', onEditClick }: TaskActionsPr
           {isOwner ? 'Share' : 'Collaborators'}
         </Button>
 
+        {/* Delete (owner only) */}
         {isOwner && (
-          <Button onClick={handleDelete} variant="destructive" className="gap-2 ml-auto">
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
+          <form action={deleteAction} className="ml-auto">
+            <input type="hidden" name="taskId" value={task.id} />
+            <SubmitButton
+              variant="destructive"
+              className="gap-2"
+              pendingText="Deleting..."
+              onClick={(e) => {
+                if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+                  e.preventDefault()
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </SubmitButton>
+          </form>
         )}
       </div>
 

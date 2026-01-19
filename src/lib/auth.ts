@@ -11,18 +11,33 @@ const DEFAULT_CATEGORIES = [
   { name: 'Home', color: '#f97316', icon: 'home' },
 ]
 
+/**
+ * Get the Relying Party ID for passkeys.
+ * Uses Vercel's built-in env vars for automatic configuration.
+ *
+ * Priority order:
+ * 1. PASSKEY_RP_ID - explicit override
+ * 2. VERCEL_PROJECT_PRODUCTION_URL - production domain (e.g., wheeldo.vercel.app)
+ * 3. VERCEL_URL - preview/branch deployment URL
+ * 4. localhost - fallback for local development
+ */
 function getPasskeyRpId(): string {
+  // 1. Explicit override
   if (process.env.PASSKEY_RP_ID) {
     return process.env.PASSKEY_RP_ID
   }
-  const baseUrl = process.env.BETTER_AUTH_URL
-  if (baseUrl) {
-    try {
-      return new URL(baseUrl).hostname
-    } catch {
-      // Fall through
-    }
+
+  // 2. Vercel production URL (stable domain)
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return process.env.VERCEL_PROJECT_PRODUCTION_URL
   }
+
+  // 3. Vercel deployment URL (preview/branch deployments)
+  if (process.env.VERCEL_URL) {
+    return process.env.VERCEL_URL
+  }
+
+  // 4. Fallback for local development
   return 'localhost'
 }
 
