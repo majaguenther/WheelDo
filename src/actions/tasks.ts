@@ -259,7 +259,7 @@ export async function deleteTask(taskId: unknown): Promise<ActionResult<{ succes
  * Defer a task (move back to pending)
  */
 export async function deferTask(taskId: unknown): Promise<ActionResult<{ success: true }>> {
-  return updateTaskStatus({ taskId, status: 'DEFERRED' })
+  return updateTaskStatus({ taskId, status: 'PENDING' })
 }
 
 /**
