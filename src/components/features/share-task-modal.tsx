@@ -114,7 +114,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
       setInvites([invite, ...invites])
 
       // Auto-copy the new invite URL
-      copyToClipboard(invite.url, invite.id)
+      await copyToClipboard(invite.url, invite.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create invite')
     } finally {
@@ -169,12 +169,16 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle, isOwner }: 
     }
   }
 
-  const copyToClipboard = (url: string, inviteId: string) => {
+  const copyToClipboard = async (url: string, inviteId: string) => {
     if (!url) return
 
-    navigator.clipboard.writeText(url)
-    setCopiedInviteId(inviteId)
-    setTimeout(() => setCopiedInviteId(null), 2000)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedInviteId(inviteId)
+      setTimeout(() => setCopiedInviteId(null), 2000)
+    } catch {
+      // Silently fail - clipboard might not be available in some contexts
+    }
   }
 
   const formatExpiryDate = (dateStr: string) => {
