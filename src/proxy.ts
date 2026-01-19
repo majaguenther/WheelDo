@@ -21,37 +21,33 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Generate CSP nonce for strict security
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const isDev = process.env.NODE_ENV === 'development'
 
-  // Content Security Policy with nonces
-  const cspDirectives = [
-    "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
-    `style-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-inline'" : ''}`,
-    "img-src 'self' blob: data: https://avatars.githubusercontent.com",
-    "font-src 'self'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    "connect-src 'self' https://api.geoapify.com",
-    'upgrade-insecure-requests',
-  ]
+  const response = NextResponse.next()
 
-  const cspHeader = cspDirectives.join('; ')
+  // Only apply strict CSP in production
+  // In development, Next.js/Turbopack uses inline scripts that can't have nonces
+  if (!isDev) {
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
-  // Set nonce in request headers for components to read
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-nonce', nonce)
+    const cspDirectives = [
+      "default-src 'self'",
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+      `style-src 'self' 'unsafe-inline'`,
+      "img-src 'self' blob: data: https://avatars.githubusercontent.com",
+      "font-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "connect-src 'self' https://api.geoapify.com",
+      'upgrade-insecure-requests',
+    ]
 
-  const response = NextResponse.next({
-    request: { headers: requestHeaders },
-  })
+    response.headers.set('Content-Security-Policy', cspDirectives.join('; '))
+  }
 
-  // Security headers
-  response.headers.set('Content-Security-Policy', cspHeader)
+  // Security headers (apply in both dev and prod)
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-XSS-Protection', '1; mode=block')

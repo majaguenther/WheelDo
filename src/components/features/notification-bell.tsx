@@ -19,7 +19,8 @@ interface NotificationResponse {
     message: string
     read: boolean
     createdAt: string
-    task?: { id: string; title: string } | null
+    taskId: string | null
+    taskTitle: string | null
   }>
   unreadCount: number
 }
@@ -81,8 +82,6 @@ export function NotificationBell() {
         .then((data) => {
           setNotifications(data.notifications.map((n) => ({
             ...n,
-            taskId: n.task?.id ?? null,
-            taskTitle: n.task?.title ?? null,
             createdAt: new Date(n.createdAt),
           })))
         })

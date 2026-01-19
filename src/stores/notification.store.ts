@@ -1,7 +1,7 @@
 'use client'
 
 import { create } from 'zustand'
-import type { NotificationDTO } from '@/data/notifications'
+import type { NotificationDTO } from '@/data/dto/notification.dto'
 
 interface NotificationState {
   notifications: NotificationDTO[]

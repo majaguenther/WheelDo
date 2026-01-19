@@ -2,21 +2,10 @@ import 'server-only'
 import { cache } from 'react'
 import { db } from '@/lib/db'
 import { getCurrentUser } from './auth'
-import type { NotificationType } from '@/generated/prisma/client'
+import type { NotificationDTO } from './dto/notification.dto'
 
-/**
- * Notification DTO
- */
-export interface NotificationDTO {
-  id: string
-  type: NotificationType
-  title: string
-  message: string
-  read: boolean
-  taskId: string | null
-  taskTitle: string | null
-  createdAt: Date
-}
+// Re-export the DTO type for convenience
+export type { NotificationDTO } from './dto/notification.dto'
 
 /**
  * Get notifications for current user
