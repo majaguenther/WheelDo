@@ -14,9 +14,7 @@ import {
     Users,
     Lock,
     Loader2,
-    ExternalLink,
 } from 'lucide-react'
-import {buildGoogleMapsUrl} from '@/types/location'
 import {cn, formatDuration, formatRelativeTime, getDeadlineColor} from '@/lib/utils'
 import {Badge} from '@/components/ui/badge'
 import {SubtaskProgressBadge} from './subtask-progress-badge'
@@ -211,17 +209,10 @@ export const TaskCard = memo(function TaskCard({task}: TaskCardProps) {
 
                         {/* Location */}
                         {task.location?.formatted && (
-                            <a
-                                href={task.location.lat && task.location.lon ? buildGoogleMapsUrl(task.location.lat, task.location.lon) : '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 truncate max-w-37.5 hover:text-foreground group/location"
-                            >
+                            <span className="flex items-center gap-1 truncate max-w-37.5">
                                 <MapPin className="h-3.5 w-3.5 shrink-0"/>
                                 <span className="truncate">{task.location.city || task.location.formatted.split(',')[0]}</span>
-                                <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover/location:opacity-100 transition-opacity"/>
-                            </a>
+                            </span>
                         )}
 
                         {/* Deadline */}

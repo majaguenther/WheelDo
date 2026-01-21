@@ -250,19 +250,15 @@ async function TaskContent({ params }: TaskPageProps) {
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Location</p>
-                  {task.location.lat && task.location.lon ? (
-                    <a
-                      href={buildGoogleMapsUrl(task.location.lat, task.location.lon)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-primary hover:underline inline-flex items-center gap-1.5"
-                    >
-                      {task.location.formatted}
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  ) : (
-                    <p className="font-medium">{task.location.formatted}</p>
-                  )}
+                  <a
+                    href={buildGoogleMapsUrl(task.location.formatted)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline inline-flex items-center gap-1.5"
+                  >
+                    {task.location.formatted}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                   {(task.location.city || task.location.country) && (
                     <p className="text-sm text-muted-foreground">
                       {[task.location.city, task.location.country].filter(Boolean).join(', ')}

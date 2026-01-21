@@ -21,8 +21,8 @@ export interface GeoapifyFeature {
   geometry: { type: 'Point'; coordinates: [number, number] }
 }
 
-export function buildGoogleMapsUrl(lat: number, lon: number): string {
-  return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
+export function buildGoogleMapsUrl(formatted: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatted)}`
 }
 
 export function extractLocationData(feature: GeoapifyFeature | null): LocationData {
