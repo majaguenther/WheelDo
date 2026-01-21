@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth-server'
 import { CircleDot } from 'lucide-react'
 import { LoginButton } from '@/components/features/login-button'
 
@@ -7,13 +5,8 @@ export const metadata = {
   title: 'Login',
 }
 
-export default async function LoginPage() {
-  const session = await getSession()
-
-  if (session?.user) {
-    redirect('/dashboard')
-  }
-
+// Note: Auth redirect is handled by proxy.ts to ensure proper Cache-Control headers
+export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
       <div className="w-full max-w-sm space-y-8">

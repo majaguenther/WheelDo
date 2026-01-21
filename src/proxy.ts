@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const protectedPaths = ['/dashboard', '/tasks', '/wheel', '/history', '/settings']
-const authPaths = ['/login']
-
 function createNonCacheableRedirect(url: URL): NextResponse {
   const response = NextResponse.redirect(url)
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
@@ -15,24 +12,18 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const sessionToken = request.cookies.get('better-auth.session_token')?.value
 
-  // Handle homepage redirect
+  // Handle homepage redirect (with no-cache to prevent stale redirects)
   if (pathname === '/') {
     const destination = sessionToken ? '/dashboard' : '/login'
     return createNonCacheableRedirect(new URL(destination, request.url))
   }
 
-  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
-  const isAuthPath = authPaths.some((path) => pathname.startsWith(path))
-
-  if (isProtectedPath && !sessionToken) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
-    return createNonCacheableRedirect(loginUrl)
-  }
-
-  if (isAuthPath && sessionToken) {
+  // Redirect authenticated users away from login page (with no-cache)
+  if (pathname === '/login' && sessionToken) {
     return createNonCacheableRedirect(new URL('/dashboard', request.url))
   }
+
+  // Protected routes are handled by their layout (proper session validation)
 
   // Continue with security headers for non-redirect requests
   const isDev = process.env.NODE_ENV === 'development'
