@@ -105,9 +105,13 @@ function ActionButton({
 export const TaskCard = memo(function TaskCard({task}: TaskCardProps) {
     const router = useRouter()
 
+    const deadlineDate = useMemo(() => (
+        task.deadline ? new Date(task.deadline) : null
+    ), [task.deadline])
+
     const deadlineColor = useMemo(
-        () => getDeadlineColor(task.deadline),
-        [task.deadline]
+        () => getDeadlineColor(deadlineDate),
+        [deadlineDate]
     )
     const isInProgress = task.status === 'IN_PROGRESS'
     const isCompleted = task.status === 'COMPLETED'
@@ -222,7 +226,7 @@ export const TaskCard = memo(function TaskCard({task}: TaskCardProps) {
                         )}
 
                         {/* Deadline */}
-                        {task.deadline && (
+                        {deadlineDate && (
                             <span
                                 className={cn(
                                     'flex items-center gap-1 px-1.5 py-0.5 rounded',
@@ -230,7 +234,7 @@ export const TaskCard = memo(function TaskCard({task}: TaskCardProps) {
                                 )}
                             >
                 <Calendar className="h-3.5 w-3.5"/>
-                                {formatRelativeTime(new Date(task.deadline))}
+                                {formatRelativeTime(deadlineDate)}
               </span>
                         )}
 
