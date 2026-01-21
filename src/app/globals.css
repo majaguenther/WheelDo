@@ -214,13 +214,17 @@ body {
   display: block;
 }
 
-.location-picker .geoapify-autocomplete-item .main-part {
+.location-picker .geoapify-autocomplete-item .address .main-part {
   font-weight: 500;
 }
 
-.location-picker .geoapify-autocomplete-item .secondary-part {
+.location-picker .geoapify-autocomplete-item .address .secondary-part {
   font-size: 0.875rem;
   color: var(--muted-foreground);
+}
+
+.location-picker .geoapify-autocomplete-item .address .comma-separator {
+  font-weight: 400;
 }
 
 /* Hide default clear button from Geoapify - we use our own */

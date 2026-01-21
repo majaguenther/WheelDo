@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   GeoapifyContext,
   GeoapifyGeocoderAutocomplete,
@@ -28,25 +28,34 @@ export function LocationPicker({
   const geocoderRef = useRef<{ clear?: () => void } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Add comma separators to dropdown items
-  const addCommasToSuggestions = useCallback(() => {
-    // Use setTimeout to ensure DOM has updated after suggestions render
-    setTimeout(() => {
+  // Insert comma separator spans between main-part and secondary-part
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const observer = new MutationObserver(() => {
       const items = containerRef.current?.querySelectorAll(
-        '.geoapify-autocomplete-item .main-part'
+        '.geoapify-autocomplete-item .address'
       )
-      items?.forEach((mainPart) => {
-        const nextSibling = mainPart.nextElementSibling
-        if (
-          nextSibling?.classList.contains('secondary-part') &&
-          !mainPart.getAttribute('data-comma-added')
-        ) {
-          // Append comma at the end of main-part (after all its content)
-          mainPart.appendChild(document.createTextNode(', '))
-          mainPart.setAttribute('data-comma-added', 'true')
+      items?.forEach((address) => {
+        const mainPart = address.querySelector('.main-part')
+        const secondaryPart = address.querySelector('.secondary-part')
+
+        // Only add comma if both parts exist and comma not already added
+        if (mainPart && secondaryPart && !address.querySelector('.comma-separator')) {
+          const comma = document.createElement('span')
+          comma.className = 'comma-separator'
+          comma.textContent = ', '
+          address.insertBefore(comma, secondaryPart)
         }
       })
-    }, 0)
+    })
+
+    observer.observe(containerRef.current, {
+      childList: true,
+      subtree: true,
+    })
+
+    return () => observer.disconnect()
   }, [])
 
   const handlePlaceSelect = useCallback(
@@ -93,10 +102,7 @@ export function LocationPicker({
             placeholder={placeholder}
             value={value?.formatted || ''}
             placeSelect={handlePlaceSelect}
-            suggestionsChange={() => {
-              setIsLoading(false)
-              addCommasToSuggestions()
-            }}
+            suggestionsChange={() => setIsLoading(false)}
             limit={5}
             debounceDelay={300}
           />
