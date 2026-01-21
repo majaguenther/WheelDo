@@ -1,12 +1,7 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth-server'
-
-export default async function Home() {
-  const session = await getSession()
-
-  if (session?.user) {
-    redirect('/dashboard')
-  }
-
-  redirect('/login')
+export default function Home() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  )
 }

@@ -3,33 +3,43 @@ import { NextRequest, NextResponse } from 'next/server'
 const protectedPaths = ['/dashboard', '/tasks', '/wheel', '/history', '/settings']
 const authPaths = ['/login']
 
+function createNonCacheableRedirect(url: URL): NextResponse {
+  const response = NextResponse.redirect(url)
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
+  return response
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const sessionToken = request.cookies.get('better-auth.session_token')?.value
 
+  // Handle homepage redirect
+  if (pathname === '/') {
+    const destination = sessionToken ? '/dashboard' : '/login'
+    return createNonCacheableRedirect(new URL(destination, request.url))
+  }
+
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
   const isAuthPath = authPaths.some((path) => pathname.startsWith(path))
 
-  // Auth redirects
   if (isProtectedPath && !sessionToken) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(loginUrl)
+    return createNonCacheableRedirect(loginUrl)
   }
 
   if (isAuthPath && sessionToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return createNonCacheableRedirect(new URL('/dashboard', request.url))
   }
 
+  // Continue with security headers for non-redirect requests
   const isDev = process.env.NODE_ENV === 'development'
-
   const response = NextResponse.next()
 
-  // Only apply strict CSP in production
-  // In development, Next.js/Turbopack uses inline scripts that can't have nonces
   if (!isDev) {
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-
     const cspDirectives = [
       "default-src 'self'",
       `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
@@ -43,11 +53,9 @@ export function proxy(request: NextRequest) {
       "connect-src 'self' https://api.geoapify.com",
       'upgrade-insecure-requests',
     ]
-
     response.headers.set('Content-Security-Policy', cspDirectives.join('; '))
   }
 
-  // Security headers (apply in both dev and prod)
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-XSS-Protection', '1; mode=block')
