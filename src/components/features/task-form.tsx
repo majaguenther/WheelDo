@@ -19,8 +19,9 @@ import {Textarea} from '@/components/ui/textarea'
 import {Label} from '@/components/ui/label'
 import {Select} from '@/components/ui/select'
 import {SubmitButton} from '@/components/ui/submit-button'
-import {LocationAutocomplete} from '@/components/ui/location-autocomplete'
+import {LocationPicker} from '@/components/ui/location-picker'
 import {DurationPicker} from '@/components/ui/duration-picker'
+import type {LocationData} from '@/types/location'
 import {UrgencySelector} from '@/components/ui/urgency-selector'
 import {EffortSelector} from '@/components/ui/effort-selector'
 import {ParentTaskSelector} from './parent-task-selector'
@@ -56,17 +57,6 @@ function parseDeadline(deadline: Date | string | null): { date: string; time: st
     return {date, time}
 }
 
-// Helper to parse location - handles both JSON objects and plain text
-function parseLocation(location: string | null): string {
-    if (!location) return ''
-    try {
-        const parsed = JSON.parse(location)
-        return parsed.formatted || parsed.name || location
-    } catch {
-        return location
-    }
-}
-
 export function TaskForm({
                              mode,
                              initialData,
@@ -92,7 +82,7 @@ export function TaskForm({
     const [title, setTitle] = useState(initialData?.title ?? '')
     const [body, setBody] = useState(initialData?.body ?? '')
     const [duration, setDuration] = useState<number | null>(initialData?.duration ?? null)
-    const [location, setLocation] = useState(parseLocation(initialData?.location ?? null))
+    const [location, setLocation] = useState<LocationData | null>(initialData?.location ?? null)
     const [urgency, setUrgency] = useState<Urgency>(initialData?.urgency ?? 'MEDIUM')
     const [effort, setEffort] = useState<Effort>(initialData?.effort ?? 'MODERATE')
     const [deadlineDate, setDeadlineDate] = useState(initialDeadline.date)
@@ -326,18 +316,24 @@ export function TaskForm({
                         <input type="hidden" name="recurrenceType" value={isSubtask ? 'NONE' : recurrence}/>
                     </div>
 
-                    {/* Location - controlled via LocationAutocomplete */}
+                    {/* Location - controlled via LocationPicker */}
                     <div className="space-y-2">
                         <Label className="flex items-center gap-1.5">
                             <MapPin className="h-3.5 w-3.5"/>
                             Location
                         </Label>
-                        <LocationAutocomplete
+                        <LocationPicker
                             value={location}
                             onChange={setLocation}
-                            placeholder="Search for a location..."
+                            placeholder="Search for a location or place..."
                         />
-                        <input type="hidden" name="location" value={location}/>
+                        {/* Hidden inputs for 6 location fields */}
+                        <input type="hidden" name="locationFormatted" value={location?.formatted ?? ''}/>
+                        <input type="hidden" name="locationLat" value={location?.lat ?? ''}/>
+                        <input type="hidden" name="locationLon" value={location?.lon ?? ''}/>
+                        <input type="hidden" name="locationCity" value={location?.city ?? ''}/>
+                        <input type="hidden" name="locationCountry" value={location?.country ?? ''}/>
+                        <input type="hidden" name="locationPlaceId" value={location?.placeId ?? ''}/>
                     </div>
 
                     {/* Parent task selector - only show if we have tasks available */}
@@ -359,7 +355,12 @@ export function TaskForm({
                 <>
                     <input type="hidden" name="deadline" value={deadlineValue}/>
                     <input type="hidden" name="recurrenceType" value={isSubtask ? 'NONE' : recurrence}/>
-                    <input type="hidden" name="location" value={location}/>
+                    <input type="hidden" name="locationFormatted" value={location?.formatted ?? ''}/>
+                    <input type="hidden" name="locationLat" value={location?.lat ?? ''}/>
+                    <input type="hidden" name="locationLon" value={location?.lon ?? ''}/>
+                    <input type="hidden" name="locationCity" value={location?.city ?? ''}/>
+                    <input type="hidden" name="locationCountry" value={location?.country ?? ''}/>
+                    <input type="hidden" name="locationPlaceId" value={location?.placeId ?? ''}/>
                     <input type="hidden" name="parentId" value={selectedParentId ?? ''}/>
                 </>
             )}

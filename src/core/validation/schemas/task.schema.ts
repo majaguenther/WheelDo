@@ -37,7 +37,13 @@ export const createTaskSchema = z.object({
     .max(1440, 'Duration cannot exceed 24 hours (1440 minutes)')
     .optional()
     .nullable(),
-  location: z.string().max(500, 'Location must be 500 characters or less').trim().optional().nullable(),
+  // Location (structured fields)
+  locationFormatted: z.string().max(500, 'Location must be 500 characters or less').trim().optional().nullable(),
+  locationLat: z.number().min(-90).max(90).optional().nullable(),
+  locationLon: z.number().min(-180).max(180).optional().nullable(),
+  locationCity: z.string().max(200).trim().optional().nullable(),
+  locationCountry: z.string().max(100).trim().optional().nullable(),
+  locationPlaceId: z.string().max(100).trim().optional().nullable(),
   effort: effortSchema.default('MODERATE'),
   urgency: urgencySchema.default('MEDIUM'),
   deadline: z.iso.datetime({ message: 'Invalid deadline format' }).optional().nullable(),
@@ -66,7 +72,13 @@ export const updateTaskSchema = z.object({
     .max(1440, 'Duration cannot exceed 24 hours')
     .optional()
     .nullable(),
-  location: z.string().max(500, 'Location must be 500 characters or less').trim().optional().nullable(),
+  // Location (structured fields)
+  locationFormatted: z.string().max(500, 'Location must be 500 characters or less').trim().optional().nullable(),
+  locationLat: z.number().min(-90).max(90).optional().nullable(),
+  locationLon: z.number().min(-180).max(180).optional().nullable(),
+  locationCity: z.string().max(200).trim().optional().nullable(),
+  locationCountry: z.string().max(100).trim().optional().nullable(),
+  locationPlaceId: z.string().max(100).trim().optional().nullable(),
   effort: effortSchema.optional(),
   urgency: urgencySchema.optional(),
   deadline: z.iso.datetime({ message: 'Invalid deadline format' }).optional().nullable(),

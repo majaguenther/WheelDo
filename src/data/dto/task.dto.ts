@@ -64,7 +64,16 @@ export function toTaskDTO(task: TaskWithRelations, viewerId: string): TaskDTO | 
     effort: task.effort,
     duration: task.duration,
     deadline: task.deadline,
-    location: task.location,
+    location: task.locationFormatted
+      ? {
+          formatted: task.locationFormatted,
+          lat: task.locationLat,
+          lon: task.locationLon,
+          city: task.locationCity,
+          country: task.locationCountry,
+          placeId: task.locationPlaceId,
+        }
+      : null,
     recurrenceType: task.recurrenceType,
     completedAt: task.completedAt,
     position: task.position,

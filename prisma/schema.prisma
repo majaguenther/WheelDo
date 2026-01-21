@@ -153,8 +153,13 @@ model Task {
   // Duration in minutes
   duration    Int?
 
-  // Location (stored as JSON with address and coordinates)
-  location    String?    @db.Text
+  // Location (structured fields)
+  locationFormatted   String?   @db.Text
+  locationLat         Float?
+  locationLon         Float?
+  locationCity        String?
+  locationCountry     String?
+  locationPlaceId     String?
 
   // Effort level (1-5 scale)
   effort      Effort     @default(MODERATE)

@@ -151,3 +151,98 @@ body {
 .animate-backdrop-in {
   animation: backdrop-fade-in 200ms ease-out forwards;
 }
+
+/* Geoapify Location Picker Custom Styles */
+.location-picker .geoapify-autocomplete-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 40px 0 36px;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.location-picker .geoapify-autocomplete-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.location-picker .geoapify-autocomplete-input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent);
+}
+
+.location-picker .geoapify-autocomplete-items {
+  position: absolute;
+  z-index: 50;
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 0;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.location-picker .geoapify-autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  transition: background-color 150ms;
+}
+
+.location-picker .geoapify-autocomplete-item:hover {
+  background-color: var(--secondary);
+}
+
+.location-picker .geoapify-autocomplete-item.active {
+  background-color: var(--secondary);
+}
+
+.location-picker .geoapify-autocomplete-item .icon {
+  display: none;
+}
+
+.location-picker .geoapify-autocomplete-item .address {
+  display: block;
+}
+
+.location-picker .geoapify-autocomplete-item .main-part {
+  font-weight: 500;
+}
+
+.location-picker .geoapify-autocomplete-item .secondary-part {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+/* Hide default clear button from Geoapify - we use our own */
+.location-picker .geoapify-close-button {
+  display: none !important;
+}
+
+/* Category pills for POI search */
+.location-picker .geoapify-autocomplete-items .category-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  margin: 4px;
+  background-color: var(--secondary);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--foreground);
+  transition: background-color 150ms;
+}
+
+.location-picker .geoapify-autocomplete-items .category-item:hover {
+  background-color: var(--muted);
+}

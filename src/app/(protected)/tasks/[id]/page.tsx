@@ -14,7 +14,9 @@ import {
   Users,
   Lock,
   AlertTriangle,
+  ExternalLink,
 } from 'lucide-react'
+import { buildGoogleMapsUrl } from '@/types/location'
 import { getCurrentUser } from '@/lib/auth-server'
 import { getTaskByIdForUser, getPotentialParentTasks } from '@/data/tasks'
 import { getCategoriesForUser } from '@/data/categories'
@@ -26,16 +28,6 @@ import { TaskActionsWithEdit } from '@/components/features/task-actions-with-edi
 import { Avatar } from '@/components/ui/avatar'
 import { SubtasksSection } from '@/components/features/subtasks-section'
 import { SubtaskProgressBadge } from '@/components/features/subtask-progress-badge'
-
-// Safely parse location - handles both JSON objects and plain text
-function parseLocation(location: string): string {
-  try {
-    const parsed = JSON.parse(location)
-    return parsed.formatted || parsed.name || location
-  } catch {
-    return location
-  }
-}
 
 // Static metadata - no private task data exposed
 // Task details are only shown via invite links (/invite/[token])
@@ -253,14 +245,29 @@ async function TaskContent({ params }: TaskPageProps) {
             )}
 
             {/* Location */}
-            {task.location && (
+            {task.location?.formatted && (
               <div className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Location</p>
-                  <p className="font-medium">
-                    {parseLocation(task.location)}
-                  </p>
+                  {task.location.lat && task.location.lon ? (
+                    <a
+                      href={buildGoogleMapsUrl(task.location.lat, task.location.lon)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline inline-flex items-center gap-1.5"
+                    >
+                      {task.location.formatted}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
+                    <p className="font-medium">{task.location.formatted}</p>
+                  )}
+                  {(task.location.city || task.location.country) && (
+                    <p className="text-sm text-muted-foreground">
+                      {[task.location.city, task.location.country].filter(Boolean).join(', ')}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

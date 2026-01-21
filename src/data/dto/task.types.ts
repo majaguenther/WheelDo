@@ -5,6 +5,18 @@ import type { UserDTO } from './user.types'
 export type TaskRole = 'owner' | 'editor' | 'viewer'
 
 /**
+ * Location DTO - structured location data
+ */
+export interface TaskLocationDTO {
+  formatted: string | null
+  lat: number | null
+  lon: number | null
+  city: string | null
+  country: string | null
+  placeId: string | null
+}
+
+/**
  * Child task DTO - minimal info for nested display
  */
 export interface ChildTaskDTO {
@@ -26,7 +38,7 @@ export interface TaskDTO {
   effort: Effort
   duration: number | null
   deadline: Date | null
-  location: string | null
+  location: TaskLocationDTO | null
   recurrenceType: RecurrenceType
   completedAt: Date | null
   position: number

@@ -59,16 +59,6 @@ export const requireAuthOrThrow = cache(async (): Promise<CurrentUser> => {
   return user
 })
 
-/**
- * Get the base URL for the application.
- * Uses Vercel's built-in env vars for automatic configuration.
- */
-export function getBaseUrl(): string {
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  return 'http://localhost:3000'
-}
+// Re-export getBaseUrl for backwards compatibility
+// Use @/lib/url directly for static contexts (sitemap, robots, etc.)
+export { getBaseUrl } from './url'
